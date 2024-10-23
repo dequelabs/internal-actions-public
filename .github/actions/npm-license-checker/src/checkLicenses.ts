@@ -1,4 +1,4 @@
-import { CheckLicensesOptions, LicenseChecker } from './types';
+import { CheckLicensesOptions, DetailsOutputFormat, LicenseChecker } from './types';
 
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
@@ -11,13 +11,17 @@ export default async function checkLicenses(
     onlyAllow,
     detailsOutputPath,
     excludePackages,
-    excludePackagesStartingWith
+    excludePackagesStartingWith,
+    detailsOutputFormat
   } = options;
 
   return new Promise((resolve, reject) => {
     licenseChecker.init(
       {
-        json: true,
+        json: detailsOutputFormat === DetailsOutputFormat.JSON,
+        csv: detailsOutputFormat === DetailsOutputFormat.CSV,
+        // @ts-ignore
+        markdown: detailsOutputFormat === DetailsOutputFormat.Markdown,
         start: startPath,
         production: dependencyType === 'production',
         development: dependencyType === 'development',

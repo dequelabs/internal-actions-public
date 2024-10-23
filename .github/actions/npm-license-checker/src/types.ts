@@ -10,6 +10,12 @@ export enum DependencyType {
 	All = 'all'
 }
 
+export enum DetailsOutputFormat {
+  JSON = 'json',
+  CSV = 'csv',
+  Markdown = 'markdown'
+}
+
 export type CheckLicensesOptions = {
   dependencyType: DependencyType;
   startPath: string;
@@ -18,6 +24,7 @@ export type CheckLicensesOptions = {
   detailsOutputPath?: string;
   excludePackages?: string;
   excludePackagesStartingWith?: string;
+  detailsOutputFormat: 
 };
 
 export interface RunOptions {

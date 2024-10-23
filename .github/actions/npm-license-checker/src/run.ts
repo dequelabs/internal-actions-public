@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { DependencyType, RunOptions } from './types';
+import { DependencyType, RunOptions, DetailsOutputFormat } from './types';
 import checkLicenses from './checkLicenses';
 
 export default async function run({ core, licenseChecker }: RunOptions) {
@@ -10,6 +10,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     const customFieldsPath = core.getInput('custom-fields-path');
     const onlyAllow = core.getInput('only-allow');
     const detailsOutputPath = core.getInput('details-output-path');
+    const detailsOutputFormat = core.getInput('details-output-format');
     const excludePackages = core.getInput('exclude-packages');
     const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with')
 
@@ -17,6 +18,15 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       core.setFailed(
         `Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(
           DependencyType
+        ).join(', ')}`
+      );
+      return;
+    }
+
+    if (!Object.values(DetailsOutputFormat).includes(detailsOutputFormat as DetailsOutputFormat)) {
+      core.setFailed(
+        `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${Object.values(
+          DetailsOutputFormat
         ).join(', ')}`
       );
       return;
@@ -66,7 +76,8 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       onlyAllow,
       detailsOutputPath,
       excludePackages,
-      excludePackagesStartingWith
+      excludePackagesStartingWith,
+      detailsOutputFormat
     });
   } catch (error) {
     core.setFailed(`Error checking licenses: ${(error as Error).message}`);
