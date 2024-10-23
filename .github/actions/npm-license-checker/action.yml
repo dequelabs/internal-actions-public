@@ -5,8 +5,8 @@ inputs:
     description: 'Type of dependencies to include: production | development | all'
     default: all
   start-path:
-    description: 'The path of the initial package.json file'
-    default: './package.json'
+    description: 'The path to begin scanning for licenses'
+    default: './'
   custom-fields-path:
     description: 'A path to a file to customize the detail output. See: https://www.npmjs.com/package/license-checker#custom-format'
   only-allow:
