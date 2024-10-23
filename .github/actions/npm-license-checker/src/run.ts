@@ -10,7 +10,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     const customFieldsPath = core.getInput('custom-fields-path');
     const onlyAllow = core.getInput('only-allow');
     const detailsOutputPath = core.getInput('details-output-path');
-    const detailsOutputFormat = core.getInput('details-output-format');
+    const detailsOutputFormat = core.getInput('details-output-format') as DetailsOutputFormat;
     const excludePackages = core.getInput('exclude-packages');
     const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with')
 
@@ -23,7 +23,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       return;
     }
 
-    if (!Object.values(DetailsOutputFormat).includes(detailsOutputFormat as DetailsOutputFormat)) {
+    if (!Object.values(DetailsOutputFormat).includes(detailsOutputFormat)) {
       core.setFailed(
         `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${Object.values(
           DetailsOutputFormat

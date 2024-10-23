@@ -24,7 +24,7 @@ export type CheckLicensesOptions = {
   detailsOutputPath?: string;
   excludePackages?: string;
   excludePackagesStartingWith?: string;
-  detailsOutputFormat: 
+  detailsOutputFormat: DetailsOutputFormat
 };
 
 export interface RunOptions {
