@@ -69,6 +69,6 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       excludePackagesStartingWith
     });
   } catch (error) {
-    core.setFailed(`Error checking licenses: ${error as Error}.message`);
+    core.setFailed(`Error checking licenses: ${(error as Error).message}`);
   }
 }
