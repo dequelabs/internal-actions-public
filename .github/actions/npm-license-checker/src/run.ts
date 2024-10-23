@@ -10,6 +10,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     const customFieldsPath = core.getInput('custom-fields-path');
     const onlyAllow = core.getInput('only-allow');
     const detailsOutputPath = core.getInput('details-output-path');
+    const excludePackages = core.getInput('exclude-packages');
 
     if (!Object.values(DependencyType).includes(dependencyType)) {
       core.setFailed(
@@ -63,6 +64,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       customFields,
       onlyAllow,
       detailsOutputPath,
+      excludePackages
     });
   } catch (error) {
     core.setFailed(`Error checking licenses: ${error as Error}.message`);
