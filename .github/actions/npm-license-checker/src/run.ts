@@ -8,7 +8,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     const dependencyType = core.getInput('dependency-type') as DependencyType;
     const startPath = core.getInput('start-path');
     const customFieldsPath = core.getInput('custom-fields-path');
-    const onlyAllow = core.getInput('only-allow');
+    // const onlyAllow = core.getInput('only-allow');
     const detailsOutputPath = core.getInput('details-output-path');
     const detailsOutputFormat = core.getInput('details-output-format') as DetailsOutputFormat;
     const excludePackages = core.getInput('exclude-packages');
@@ -73,7 +73,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       startPath,
       dependencyType,
       customFields,
-      onlyAllow,
+      onlyAllow: undefined,
       detailsOutputPath,
       excludePackages,
       excludePackagesStartingWith,
