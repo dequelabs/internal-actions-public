@@ -39204,13 +39204,13 @@ async function checkLicenses(licenseChecker, options) {
     const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith } = options;
     return new Promise((resolve, reject) => {
         licenseChecker.init({
+            json: true,
             start: startPath,
             production: dependencyType === 'production',
             development: dependencyType === 'development',
             out: detailsOutputPath,
             onlyAllow,
             customFormat: customFields,
-            summary: true,
             excludePackages,
             excludePackagesStartingWith
         }, (err, packages) => {

@@ -17,13 +17,13 @@ export default async function checkLicenses(
   return new Promise((resolve, reject) => {
     licenseChecker.init(
       {
+        json: true,
         start: startPath,
         production: dependencyType === 'production',
         development: dependencyType === 'development',
         out: detailsOutputPath,
         onlyAllow,
         customFormat: customFields,
-        summary: true,
         excludePackages,
         excludePackagesStartingWith
       },
