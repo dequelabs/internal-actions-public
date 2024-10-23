@@ -39260,9 +39260,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7930));
-const license_checker_rseidelsohn_1 = __importDefault(__nccwpck_require__(3090));
+const licenseChecker = __importStar(__nccwpck_require__(3090));
 const run_1 = __importDefault(__nccwpck_require__(4130));
-(0, run_1.default)({ core, licenseChecker: license_checker_rseidelsohn_1.default });
+(0, run_1.default)({ core, licenseChecker });
 
 
 /***/ }),
