@@ -13,7 +13,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
 
     if (!Object.values(DependencyType).includes(dependencyType)) {
       core.setFailed(
-        `Invalid dependencyType: ${dependencyType}. Allowed values are: ${Object.values(
+        `Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(
           DependencyType
         ).join(', ')}`
       );
@@ -22,14 +22,14 @@ export default async function run({ core, licenseChecker }: RunOptions) {
 
     if (!fs.existsSync(path.resolve(startPath))) {
       core.setFailed(
-        `The file specified by startPath does not exist: ${startPath}`
+        `The file specified by start-path does not exist: ${startPath}`
       );
       return;
     }
 
     if (customFieldsPath && !fs.existsSync(path.resolve(customFieldsPath))) {
       core.setFailed(
-        `The file specified by customFieldsPath does not exist: ${customFieldsPath}`
+        `The file specified by custom-fields-path does not exist: ${customFieldsPath}`
       );
       return;
     }
