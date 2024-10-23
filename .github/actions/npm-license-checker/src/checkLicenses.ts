@@ -10,7 +10,8 @@ export default async function checkLicenses(
     customFields,
     onlyAllow,
     detailsOutputPath,
-    excludePackages
+    excludePackages,
+    excludePackagesStartingWith
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -23,7 +24,8 @@ export default async function checkLicenses(
         onlyAllow,
         customFormat: customFields,
         summary: true,
-        excludePackages
+        excludePackages,
+        excludePackagesStartingWith
       },
       (err, packages) => {
         if (err) {

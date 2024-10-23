@@ -17,6 +17,8 @@ inputs:
     description: The path to output details (e.g. ./licenseData.json).
   exclude-packages:
     description: A comma-separated list of packages to exclude
+  exclude-packages-starting-with:
+    description: 'A comma-separated list of package name prefixes to exclude (e.g "@deque/")'
 
 runs:
   using: 'node20'

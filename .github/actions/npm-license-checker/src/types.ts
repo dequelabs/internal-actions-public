@@ -1,5 +1,5 @@
 import type core from '@actions/core'
-import type licenseChecker from 'license-checker'
+import type licenseChecker from 'license-checker-rseidelsohn'
 
 export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type LicenseChecker = Pick<typeof licenseChecker, 'init'>
@@ -17,6 +17,7 @@ export type CheckLicensesOptions = {
   onlyAllow?: string;
   detailsOutputPath?: string;
   excludePackages?: string;
+  excludePackagesStartingWith?: string;
 };
 
 export interface RunOptions {
