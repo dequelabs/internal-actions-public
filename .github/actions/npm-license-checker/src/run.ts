@@ -5,11 +5,11 @@ import checkLicenses from './checkLicenses';
 
 export default async function run({ core, licenseChecker }: RunOptions) {
   try {
-    const dependencyType = core.getInput('dependencyType') as DependencyType;
-    const startPath = core.getInput('startPath');
-    const customFieldsPath = core.getInput('customFieldsPath');
-    const onlyAllow = core.getInput('onlyAllow');
-    const detailsOutputPath = core.getInput('detailsOutputPath');
+    const dependencyType = core.getInput('dependency-type') as DependencyType;
+    const startPath = core.getInput('start-path');
+    const customFieldsPath = core.getInput('custom-fields-path');
+    const onlyAllow = core.getInput('only-allow');
+    const detailsOutputPath = core.getInput('details-output-path');
 
     if (!Object.values(DependencyType).includes(dependencyType)) {
       core.setFailed(

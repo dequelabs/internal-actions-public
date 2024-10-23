@@ -20,7 +20,8 @@ export default async function checkLicenses(
         development: dependencyType === 'development',
         out: detailsOutputPath,
         onlyAllow,
-        customFormat: customFields
+        customFormat: customFields,
+        summary: true
       },
       (err, packages) => {
         if (err) {
