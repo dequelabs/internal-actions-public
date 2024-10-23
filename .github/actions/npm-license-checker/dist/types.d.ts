@@ -13,6 +13,7 @@ export type CheckLicensesOptions = {
     customFields?: Record<string, any>;
     onlyAllow?: string;
     detailsOutputPath?: string;
+    excludePackages?: string;
 };
 export interface RunOptions {
     core: Core;

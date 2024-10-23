@@ -39841,7 +39841,7 @@ module.exports = {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = checkLicenses;
 async function checkLicenses(licenseChecker, options) {
-    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath } = options;
+    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages } = options;
     return new Promise((resolve, reject) => {
         licenseChecker.init({
             start: startPath,
@@ -39850,7 +39850,8 @@ async function checkLicenses(licenseChecker, options) {
             out: detailsOutputPath,
             onlyAllow,
             customFormat: customFields,
-            summary: true
+            summary: true,
+            excludePackages
         }, (err, packages) => {
             if (err) {
                 reject(err);
@@ -39926,6 +39927,7 @@ async function run({ core, licenseChecker }) {
         const customFieldsPath = core.getInput('custom-fields-path');
         const onlyAllow = core.getInput('only-allow');
         const detailsOutputPath = core.getInput('details-output-path');
+        const excludePackages = core.getInput('exclude-packages');
         if (!Object.values(types_1.DependencyType).includes(dependencyType)) {
             core.setFailed(`Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(types_1.DependencyType).join(', ')}`);
             return;
@@ -39960,6 +39962,7 @@ async function run({ core, licenseChecker }) {
             customFields,
             onlyAllow,
             detailsOutputPath,
+            excludePackages
         });
     }
     catch (error) {
