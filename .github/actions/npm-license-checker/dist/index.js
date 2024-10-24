@@ -39289,6 +39289,7 @@ async function run({ core, licenseChecker }) {
         const dependencyType = core.getInput('dependency-type');
         const startPath = core.getInput('start-path');
         const customFieldsPath = core.getInput('custom-fields-path');
+        const onlyAllow = core.getInput('only-allow');
         const detailsOutputPath = core.getInput('details-output-path');
         const detailsOutputFormat = core.getInput('details-output-format');
         const excludePackages = core.getInput('exclude-packages');
@@ -39329,7 +39330,7 @@ async function run({ core, licenseChecker }) {
             startPath,
             dependencyType,
             customFields,
-            onlyAllow: undefined,
+            onlyAllow,
             detailsOutputPath,
             excludePackages,
             excludePackagesStartingWith,
