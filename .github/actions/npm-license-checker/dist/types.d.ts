@@ -16,6 +16,7 @@ export type CheckLicensesOptions = {
     dependencyType: DependencyType;
     startPath: string;
     customFields?: Record<string, any>;
+    clarificationsPath?: string;
     onlyAllow?: string;
     detailsOutputPath?: string;
     excludePackages?: string;

@@ -8,11 +8,16 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     const dependencyType = core.getInput('dependency-type') as DependencyType;
     const startPath = core.getInput('start-path');
     const customFieldsPath = core.getInput('custom-fields-path');
+    const clarificationsPath = core.getInput('clarifications-path');
     const onlyAllow = core.getInput('only-allow');
     const detailsOutputPath = core.getInput('details-output-path');
-    const detailsOutputFormat = core.getInput('details-output-format') as DetailsOutputFormat;
+    const detailsOutputFormat = core.getInput(
+      'details-output-format'
+    ) as DetailsOutputFormat;
     const excludePackages = core.getInput('exclude-packages');
-    const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with')
+    const excludePackagesStartingWith = core.getInput(
+      'exclude-packages-starting-with'
+    );
 
     if (!Object.values(DependencyType).includes(dependencyType)) {
       core.setFailed(
@@ -46,11 +51,20 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       return;
     }
 
+    if (
+      clarificationsPath &&
+      !fs.existsSync(path.resolve(clarificationsPath))
+    ) {
+      core.setFailed(
+        `The file specified by clarifications-path does not exist: ${clarificationsPath}`
+      );
+    }
+
     let customFields: Record<string, any> | undefined = {
       name: '',
       version: '',
       licenses: '',
-      licenseText: ''
+      licenseText: '',
     };
     if (customFieldsPath) {
       try {
@@ -77,7 +91,8 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       detailsOutputPath,
       excludePackages,
       excludePackagesStartingWith,
-      detailsOutputFormat
+      detailsOutputFormat,
+      clarificationsPath
     });
   } catch (error) {
     core.setFailed(`Error checking licenses: ${(error as Error).message}`);

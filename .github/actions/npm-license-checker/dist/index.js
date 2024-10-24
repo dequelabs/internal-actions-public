@@ -39202,20 +39202,21 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = checkLicenses;
 const types_1 = __nccwpck_require__(2658);
 async function checkLicenses(licenseChecker, options) {
-    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat } = options;
+    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat, clarificationsPath } = options;
     return new Promise((resolve, reject) => {
         licenseChecker.init({
             json: detailsOutputFormat === types_1.DetailsOutputFormat.JSON,
             csv: detailsOutputFormat === types_1.DetailsOutputFormat.CSV,
             markdown: detailsOutputFormat === types_1.DetailsOutputFormat.Markdown,
             start: startPath,
-            production: dependencyType === 'production',
-            development: dependencyType === 'development',
+            production: dependencyType === types_1.DependencyType.Production,
+            development: dependencyType === types_1.DependencyType.Development,
             out: detailsOutputPath,
             onlyAllow,
             customFormat: customFields,
             excludePackages,
-            excludePackagesStartingWith
+            excludePackagesStartingWith,
+            clarificationsFile: clarificationsPath
         }, (err, packages) => {
             if (err) {
                 reject(err);
@@ -39289,6 +39290,7 @@ async function run({ core, licenseChecker }) {
         const dependencyType = core.getInput('dependency-type');
         const startPath = core.getInput('start-path');
         const customFieldsPath = core.getInput('custom-fields-path');
+        const clarificationsPath = core.getInput('clarifications-path');
         const onlyAllow = core.getInput('only-allow');
         const detailsOutputPath = core.getInput('details-output-path');
         const detailsOutputFormat = core.getInput('details-output-format');
@@ -39310,11 +39312,15 @@ async function run({ core, licenseChecker }) {
             core.setFailed(`The file specified by custom-fields-path does not exist: ${customFieldsPath}`);
             return;
         }
+        if (clarificationsPath &&
+            !fs_1.default.existsSync(path_1.default.resolve(clarificationsPath))) {
+            core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
+        }
         let customFields = {
             name: '',
             version: '',
             licenses: '',
-            licenseText: ''
+            licenseText: '',
         };
         if (customFieldsPath) {
             try {
@@ -39334,7 +39340,8 @@ async function run({ core, licenseChecker }) {
             detailsOutputPath,
             excludePackages,
             excludePackagesStartingWith,
-            detailsOutputFormat
+            detailsOutputFormat,
+            clarificationsPath
         });
     }
     catch (error) {

@@ -1,4 +1,4 @@
-import { CheckLicensesOptions, DetailsOutputFormat, LicenseChecker } from './types';
+import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker } from './types';
 
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
@@ -12,7 +12,8 @@ export default async function checkLicenses(
     detailsOutputPath,
     excludePackages,
     excludePackagesStartingWith,
-    detailsOutputFormat
+    detailsOutputFormat,
+    clarificationsPath
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -23,13 +24,14 @@ export default async function checkLicenses(
         // @ts-ignore
         markdown: detailsOutputFormat === DetailsOutputFormat.Markdown,
         start: startPath,
-        production: dependencyType === 'production',
-        development: dependencyType === 'development',
+        production: dependencyType === DependencyType.Production,
+        development: dependencyType === DependencyType.Development,
         out: detailsOutputPath,
         onlyAllow,
         customFormat: customFields,
         excludePackages,
-        excludePackagesStartingWith
+        excludePackagesStartingWith,
+        clarificationsFile: clarificationsPath
       },
       (err, packages) => {
         if (err) {
