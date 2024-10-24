@@ -1,0 +1,17 @@
+{
+  "name": "internal-actions-public",
+  "version": "1.0.0",
+  "description": "A collection of GitHub actions for internal use with public and private repositories",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "MPL-2.0",
+  "workspaces": [
+    "./.github/actions/*"
+  ],
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  }
+}
