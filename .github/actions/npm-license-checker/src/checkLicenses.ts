@@ -1,9 +1,9 @@
-import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker } from './types';
+import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker, ModuleInfos } from './types';
 
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
   options: CheckLicensesOptions
-): Promise<void> {
+): Promise<ModuleInfos> {
   const {
     dependencyType,
     startPath,
@@ -37,9 +37,7 @@ export default async function checkLicenses(
         if (err) {
           reject(err);
         } else {
-          // Here you can add additional logic to process the packages
-          // For now, we'll just resolve the promise
-          resolve();
+          resolve(packages);
         }
       }
     );

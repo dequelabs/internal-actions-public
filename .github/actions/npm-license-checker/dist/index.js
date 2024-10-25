@@ -39222,7 +39222,7 @@ async function checkLicenses(licenseChecker, options) {
                 reject(err);
             }
             else {
-                resolve();
+                resolve(packages);
             }
         });
     });
@@ -39266,7 +39266,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7930));
 const licenseChecker = __importStar(__nccwpck_require__(3090));
 const run_1 = __importDefault(__nccwpck_require__(4130));
-(0, run_1.default)({ core, licenseChecker });
+(0, run_1.default)({ core, licenseChecker: licenseChecker });
 
 
 /***/ }),
@@ -39332,7 +39332,7 @@ async function run({ core, licenseChecker }) {
                 return;
             }
         }
-        await (0, checkLicenses_1.default)(licenseChecker, {
+        const result = await (0, checkLicenses_1.default)(licenseChecker, {
             startPath,
             dependencyType,
             customFields,
@@ -39343,6 +39343,7 @@ async function run({ core, licenseChecker }) {
             detailsOutputFormat,
             clarificationsPath
         });
+        core.info(licenseChecker.asSummary(result));
     }
     catch (error) {
         core.setFailed(`Error checking licenses: ${error.message}`);

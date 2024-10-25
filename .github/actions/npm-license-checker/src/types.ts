@@ -2,7 +2,10 @@ import type core from '@actions/core'
 import type licenseChecker from 'license-checker-rseidelsohn'
 
 export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
-export type LicenseChecker = Pick<typeof licenseChecker, 'init'>
+export type ModuleInfos = licenseChecker.ModuleInfos
+export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
+  asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
+}
 
 export enum DependencyType {
 	Production = 'production',

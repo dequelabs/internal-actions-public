@@ -83,7 +83,7 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       }
     }
 
-    await checkLicenses(licenseChecker, {
+    const result = await checkLicenses(licenseChecker, {
       startPath,
       dependencyType,
       customFields,
@@ -94,6 +94,8 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       detailsOutputFormat,
       clarificationsPath
     });
+
+    core.info(licenseChecker.asSummary(result))
   } catch (error) {
     core.setFailed(`Error checking licenses: ${(error as Error).message}`);
   }
