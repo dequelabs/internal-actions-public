@@ -1,22 +1,22 @@
-import type core from '@actions/core'
-import type licenseChecker from 'license-checker-rseidelsohn'
+import type core from '@actions/core';
+import type licenseChecker from 'license-checker-rseidelsohn';
 
-export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
-export type ModuleInfos = licenseChecker.ModuleInfos
+export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>;
+export type ModuleInfos = licenseChecker.ModuleInfos;
 export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
-  asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
-}
+  asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string;
+};
 
 export enum DependencyType {
-	Production = 'production',
-	Development = 'development',
-	All = 'all'
+  Production = 'production',
+  Development = 'development',
+  All = 'all',
 }
 
 export enum DetailsOutputFormat {
   JSON = 'json',
   CSV = 'csv',
-  Markdown = 'markdown'
+  Markdown = 'markdown',
 }
 
 export type CheckLicensesOptions = {
