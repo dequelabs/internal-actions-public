@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import checkLicenses from './checkLicenses';
 import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker, ModuleInfos } from './types';
 
-describe.only('checkLicenses', () => {
+describe('checkLicenses', () => {
   let licenseChecker: sinon.SinonStubbedInstance<LicenseChecker>;
   let options: CheckLicensesOptions;
 

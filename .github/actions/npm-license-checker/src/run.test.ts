@@ -104,7 +104,7 @@ describe('run', () => {
     );
   });
 
-  it('should handle custom fields path correctly', async () => {
+  it('should handle custom fields path correctly when file exists', async () => {
     core.getInput
       .withArgs('custom-fields-path')
       .returns('./custom-fields.json');
@@ -115,6 +115,23 @@ describe('run', () => {
     await run({ core, licenseChecker });
 
     assert.isFalse(core.setFailed.called);
+  });
+
+  it('should fail when custom-fields-path does not exist', async () => {
+    core.getInput
+      .withArgs('custom-fields-path')
+      .returns('./custom-fields.json');
+    existsSyncStub
+      .withArgs(path.resolve('./custom-fields.json'))
+      .returns(false);
+
+    await run({ core, licenseChecker });
+
+    assert.isTrue(core.setFailed.called);
+    assert.include(
+      core.setFailed.firstCall.args[0],
+      'custom-fields-path does not exist'
+    );
   });
 
   it('should fail when custom fields file is invalid JSON', async () => {
@@ -146,6 +163,21 @@ describe('run', () => {
     assert.include(
       core.setFailed.firstCall.args[0],
       'clarifications-path does not exist'
+    );
+  });
+
+  it('should fail when checkLicenses rejects', async () => {
+    const error = new Error('License check failed');
+    licenseChecker.init.callsFake((options, cb) => {
+      cb(error, {});
+    });
+
+    await run({ core, licenseChecker });
+
+    assert.isTrue(core.setFailed.called);
+    assert.include(
+      core.setFailed.firstCall.args[0],
+      'License check failed'
     );
   });
 });
