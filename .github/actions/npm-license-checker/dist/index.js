@@ -39320,7 +39320,7 @@ async function run({ core, licenseChecker }) {
             name: '',
             version: '',
             licenses: '',
-            licenseText: '',
+            licenseText: ''
         };
         if (customFieldsPath) {
             try {
