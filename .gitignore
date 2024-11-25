@@ -1,4 +1,7 @@
 # Only ignore root node_modules
 /node_modules
 
+node_modules/.cache
+coverage
+
 .nyc_output
