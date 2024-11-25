@@ -1,5 +1,6 @@
 import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker, ModuleInfos } from './types';
 
+
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
   options: CheckLicensesOptions
