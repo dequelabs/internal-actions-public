@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A collection of GitHub actions for internal use with public and private repositories",
   "scripts": {
+    "prepare": "husky install",
     "build": "npm --workspaces run build",
     "test": "npm --workspaces run test"
   },
@@ -17,6 +18,7 @@
     "@types/sinon": "^17.0.3",
     "@vercel/ncc": "^0.38.2",
     "chai": "^4.5.0",
+    "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
     "mocha": "^10.8.2",
     "nyc": "^17.1.0",
