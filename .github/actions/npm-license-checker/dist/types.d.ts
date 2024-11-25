@@ -15,10 +15,11 @@ export declare enum DetailsOutputFormat {
     CSV = "csv",
     Markdown = "markdown"
 }
+export type CustomFields = Record<string, any>;
 export type CheckLicensesOptions = {
     dependencyType: DependencyType;
     startPath: string;
-    customFields?: Record<string, any>;
+    customFields?: CustomFields;
     clarificationsPath?: string;
     onlyAllow?: string;
     detailsOutputPath?: string;

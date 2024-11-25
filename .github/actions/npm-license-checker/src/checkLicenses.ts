@@ -1,5 +1,10 @@
-import { CheckLicensesOptions, DependencyType, DetailsOutputFormat, LicenseChecker, ModuleInfos } from './types';
-
+import {
+  CheckLicensesOptions,
+  DependencyType,
+  DetailsOutputFormat,
+  LicenseChecker,
+  ModuleInfos
+} from './types'
 
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
@@ -15,14 +20,14 @@ export default async function checkLicenses(
     excludePackagesStartingWith,
     detailsOutputFormat,
     clarificationsPath
-  } = options;
+  } = options
 
   return new Promise((resolve, reject) => {
     licenseChecker.init(
       {
         json: detailsOutputFormat === DetailsOutputFormat.JSON,
         csv: detailsOutputFormat === DetailsOutputFormat.CSV,
-        // @ts-ignore
+        // @ts-expect-error The markdown option is not typed in license-checker-rseidelsohn
         markdown: detailsOutputFormat === DetailsOutputFormat.Markdown,
         start: startPath,
         production: dependencyType === DependencyType.Production,
@@ -36,11 +41,11 @@ export default async function checkLicenses(
       },
       (err, packages) => {
         if (err) {
-          reject(err);
+          reject(err)
         } else {
-          resolve(packages);
+          resolve(packages)
         }
       }
-    );
-  });
+    )
+  })
 }

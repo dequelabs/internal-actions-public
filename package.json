@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A collection of GitHub actions for internal use with public and private repositories",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky",
     "build": "npm --workspaces run build",
     "test": "npm --workspaces run test"
   },
@@ -12,20 +12,24 @@
     "./.github/actions/*"
   ],
   "devDependencies": {
+    "@eslint/js": "^9.15.0",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.9.3",
     "@types/sinon": "^17.0.3",
     "@vercel/ncc": "^0.38.2",
     "chai": "^4.5.0",
+    "eslint": "^9.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
     "mocha": "^10.8.2",
     "nyc": "^17.1.0",
+    "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
     "sinon": "^19.0.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.16.0"
   },
   "lint-staged": {
     "*.{md,json,js,ts,html}": [

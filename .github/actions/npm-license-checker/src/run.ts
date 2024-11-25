@@ -1,31 +1,36 @@
-import fs from 'fs';
-import path from 'path';
-import { DependencyType, RunOptions, DetailsOutputFormat } from './types';
-import checkLicenses from './checkLicenses';
+import fs from 'fs'
+import path from 'path'
+import {
+  DependencyType,
+  RunOptions,
+  DetailsOutputFormat,
+  CustomFields
+} from './types'
+import checkLicenses from './checkLicenses'
 
 export default async function run({ core, licenseChecker }: RunOptions) {
   try {
-    const dependencyType = core.getInput('dependency-type') as DependencyType;
-    const startPath = core.getInput('start-path');
-    const customFieldsPath = core.getInput('custom-fields-path');
-    const clarificationsPath = core.getInput('clarifications-path');
-    const onlyAllow = core.getInput('only-allow');
-    const detailsOutputPath = core.getInput('details-output-path');
+    const dependencyType = core.getInput('dependency-type') as DependencyType
+    const startPath = core.getInput('start-path')
+    const customFieldsPath = core.getInput('custom-fields-path')
+    const clarificationsPath = core.getInput('clarifications-path')
+    const onlyAllow = core.getInput('only-allow')
+    const detailsOutputPath = core.getInput('details-output-path')
     const detailsOutputFormat = core.getInput(
       'details-output-format'
-    ) as DetailsOutputFormat;
-    const excludePackages = core.getInput('exclude-packages');
+    ) as DetailsOutputFormat
+    const excludePackages = core.getInput('exclude-packages')
     const excludePackagesStartingWith = core.getInput(
       'exclude-packages-starting-with'
-    );
+    )
 
     if (!Object.values(DependencyType).includes(dependencyType)) {
       core.setFailed(
         `Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(
           DependencyType
         ).join(', ')}`
-      );
-      return;
+      )
+      return
     }
 
     if (!Object.values(DetailsOutputFormat).includes(detailsOutputFormat)) {
@@ -33,22 +38,22 @@ export default async function run({ core, licenseChecker }: RunOptions) {
         `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${Object.values(
           DetailsOutputFormat
         ).join(', ')}`
-      );
-      return;
+      )
+      return
     }
 
     if (!fs.existsSync(path.resolve(startPath))) {
       core.setFailed(
         `The file specified by start-path does not exist: ${startPath}`
-      );
-      return;
+      )
+      return
     }
 
     if (customFieldsPath && !fs.existsSync(path.resolve(customFieldsPath))) {
       core.setFailed(
         `The file specified by custom-fields-path does not exist: ${customFieldsPath}`
-      );
-      return;
+      )
+      return
     }
 
     if (
@@ -57,29 +62,29 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     ) {
       core.setFailed(
         `The file specified by clarifications-path does not exist: ${clarificationsPath}`
-      );
+      )
     }
 
-    let customFields: Record<string, any> | undefined = {
+    let customFields: CustomFields | undefined = {
       name: '',
       version: '',
       licenses: '',
-      licenseText: '',
-    };
+      licenseText: ''
+    }
     if (customFieldsPath) {
       try {
         const customFieldsContent = fs.readFileSync(
           path.resolve(customFieldsPath),
           'utf8'
-        );
-        customFields = JSON.parse(customFieldsContent);
+        )
+        customFields = JSON.parse(customFieldsContent)
       } catch (error) {
         core.setFailed(
           `Error reading or parsing customFieldsPath: ${
             (error as Error).message
           }`
-        );
-        return;
+        )
+        return
       }
     }
 
@@ -93,10 +98,10 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       excludePackagesStartingWith,
       detailsOutputFormat,
       clarificationsPath
-    });
+    })
 
     core.info(licenseChecker.asSummary(result))
   } catch (error) {
-    core.setFailed(`Error checking licenses: ${(error as Error).message}`);
+    core.setFailed(`Error checking licenses: ${(error as Error).message}`)
   }
 }
