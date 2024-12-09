@@ -1,5 +1,5 @@
-name: NPM License Checker
-description: A GitHub action to check 3rd-party licenses
+name: npm-license-checker
+description: A GitHub action to check 3rd-party licenses and output a report of licenses used
 inputs:
   dependency-type:
     description: 'Type of dependencies to include: production | development | all'
