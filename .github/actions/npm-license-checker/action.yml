@@ -1,0 +1,30 @@
+name: npm-license-checker
+description: A GitHub action to check 3rd-party licenses and output a report of licenses used
+inputs:
+  dependency-type:
+    description: 'Type of dependencies to include: production | development | all'
+    default: all
+  start-path:
+    description: 'The path to begin scanning for licenses'
+    default: './'
+  custom-fields-path:
+    description: 'A path to a file to customize the detail output. See: https://www.npmjs.com/package/license-checker-rseidelsohn#custom-format'
+  clarifications-path:
+    description: 'A path to a file that contains license clarifications. See: https://www.npmjs.com/package/license-checker-rseidelsohn#clarifications'
+  only-allow:
+    description: A semicolon-separated list of allowed licenses
+    # Based on https://opensource.google/documentation/reference/thirdparty/licenses
+    default: "AFL-2.1;AFL-3.0;AMPAS;Apache-2.0;Artistic-1.0;Artistic-2.0;Apache-1.1;Beerware;BSL-1.0;BSD-2-Clause;BSD-3-Clause;BSD-2-Clause-Patent;CC-BY-1.0;CC-BY-2.0;CC-BY-2.5;CC-BY-3.0;CC-BY-4.0;JSON;FTL;HPND;ImageMagick;ISC;libtiff;LPL-1.02;MS-PL;MIT;MIT-CMU;NCSA;NIST-Software;OpenSSL;PHP-3.0;PostgreSQL;TCP-wrappers;UPL-1.0;W3C-20150513;WTFPL;Xnet;Zend-2.0;Zlib;ZPL-2.0;0BSD;CC0-1.0;Unlicense;Python-2.0"
+  details-output-path:
+    description: The path to output details (e.g. ./licenseData.json).
+  details-output-format:
+    description: The format to output the results in (csv | json | markdown)
+    default: json
+  exclude-packages:
+    description: A comma-separated list of packages to exclude
+  exclude-packages-starting-with:
+    description: 'A comma-separated list of package name prefixes to exclude (e.g "@deque/")'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
