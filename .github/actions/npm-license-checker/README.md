@@ -1,13 +1,36 @@
+# npm-license-checker
+A GitHub action to check 3rd-party licenses and output a report of licenses used
+
+## Inputs
+| Name | Required | Description | Default |
+| ---- | -------- | ----------- | ------- |
+| `dependency-type` | No | Type of dependencies to include: production \| development \| all | `all` |
+| `start-path` | No | The path to begin scanning for licenses | `./` |
+| `custom-fields-path` | No | A path to a file to customize the detail output. See: https://www.npmjs.com/package/license-checker-rseidelsohn#custom-format | NA |
+| `clarifications-path` | No | A path to a file that contains license clarifications. See: https://www.npmjs.com/package/license-checker-rseidelsohn#clarifications | NA |
+| `only-allow` | No | A semicolon-separated list of allowed licenses | [List of common open source licenses] |
+| `details-output-path` | No | The path to output details (e.g. ./licenseData.json) | NA |
+| `details-output-format` | No | The format to output the results in (csv \| json \| markdown) | `json` |
+| `exclude-packages` | No | A comma-separated list of packages to exclude | NA |
+| `exclude-packages-starting-with` | No | A comma-separated list of package name prefixes to exclude | NA |
+
+## Example usage
+```yaml
 name: Generate Third-Party Credits
 
 on:
-push:
-branches: - '\*\*' - '!master' - '!release' - '!develop'
+  push:
+    branches:
+      - '**'
+      - '!master'
+      - '!release'
+      - '!develop'
 
 jobs:
-generate-credits:
-runs-on: ubuntu-latest
-steps: - uses: actions/checkout@v4
+  generate-credits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -32,3 +55,4 @@ steps: - uses: actions/checkout@v4
         with:
           commit_message: 'Update credits.json'
           file_pattern: './app/src/credits.json'
+```
