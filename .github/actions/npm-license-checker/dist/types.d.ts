@@ -13,7 +13,8 @@ export declare enum DependencyType {
 export declare enum DetailsOutputFormat {
     JSON = "json",
     CSV = "csv",
-    Markdown = "markdown"
+    Markdown = "markdown",
+    PlainVertical = "plainVertical"
 }
 export type CustomFields = Record<string, any>;
 export type CheckLicensesOptions = {

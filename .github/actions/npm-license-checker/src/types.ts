@@ -16,7 +16,8 @@ export enum DependencyType {
 export enum DetailsOutputFormat {
   JSON = 'json',
   CSV = 'csv',
-  Markdown = 'markdown'
+  Markdown = 'markdown',
+  PlainVertical = 'plainVertical'
 }
 
 // This matches the type of the customFormat option in license-checker-rseidelsohn

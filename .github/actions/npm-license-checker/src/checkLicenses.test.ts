@@ -57,6 +57,7 @@ describe('checkLicenses', () => {
       csv: false,
       // @ts-expect-error - The markdown option is not typed in license-checker-rseidelsohn
       markdown: false,
+      plainVertical: false,
       start: './test-path',
       production: true,
       development: false,
@@ -132,6 +133,24 @@ describe('checkLicenses', () => {
       json: false,
       csv: false,
       markdown: true
+    })
+  })
+
+  it('should handle PlainVertical output format', async () => {
+    options.detailsOutputFormat = DetailsOutputFormat.PlainVertical
+
+    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
+      // @ts-expect-error - The first argument can be an error or null
+      callback(null, {})
+    })
+
+    await checkLicenses(licenseChecker, options)
+
+    assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
+      json: false,
+      csv: false,
+      markdown: false,
+      plainVertical: true
     })
   })
 })

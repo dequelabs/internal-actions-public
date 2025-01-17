@@ -29,6 +29,8 @@ export default async function checkLicenses(
         csv: detailsOutputFormat === DetailsOutputFormat.CSV,
         // @ts-expect-error The markdown option is not typed in license-checker-rseidelsohn
         markdown: detailsOutputFormat === DetailsOutputFormat.Markdown,
+        plainVertical:
+          detailsOutputFormat === DetailsOutputFormat.PlainVertical,
         start: startPath,
         production: dependencyType === DependencyType.Production,
         development: dependencyType === DependencyType.Development,
