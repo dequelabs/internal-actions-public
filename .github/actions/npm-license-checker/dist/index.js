@@ -39208,6 +39208,7 @@ async function checkLicenses(licenseChecker, options) {
             json: detailsOutputFormat === types_1.DetailsOutputFormat.JSON,
             csv: detailsOutputFormat === types_1.DetailsOutputFormat.CSV,
             markdown: detailsOutputFormat === types_1.DetailsOutputFormat.Markdown,
+            plainVertical: detailsOutputFormat === types_1.DetailsOutputFormat.PlainVertical,
             start: startPath,
             production: dependencyType === types_1.DependencyType.Production,
             development: dependencyType === types_1.DependencyType.Development,
@@ -39371,6 +39372,7 @@ var DetailsOutputFormat;
     DetailsOutputFormat["JSON"] = "json";
     DetailsOutputFormat["CSV"] = "csv";
     DetailsOutputFormat["Markdown"] = "markdown";
+    DetailsOutputFormat["PlainVertical"] = "plainVertical";
 })(DetailsOutputFormat || (exports.DetailsOutputFormat = DetailsOutputFormat = {}));
 
 
