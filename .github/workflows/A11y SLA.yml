@@ -1,0 +1,78 @@
+name: A11y SLA Labels
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: "0 0 * * *"  # Runs every day at 00:00 UTC
+
+permissions:
+  issues: write
+
+jobs:
+  fetch-outdated-tickets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Fetch and Label Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          set -e
+
+          # Define SLA Thresholds
+          declare -A LABEL_THRESHOLDS=( ["Blocker"]=4 ["Critical"]=10 ["Serious"]=20 ["Moderate"]=30 ) # Numbers in weeks
+
+          # Required labels for filtering
+          REQUIRED_LABELS=("A11y" "VPAT")
+
+          # Updated SLA Labels
+          SLA_LABELS=("SLA P1" "SLA P2" "SLA P3" "SLA Breach")
+
+          # Fetch open issues
+          RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/issues?state=open")
+
+          CURRENT_TIMESTAMP=$(date -u +%s)
+
+          declare -A GROUPED_ISSUES
+
+          mapfile -t ISSUES < <(echo "$RESPONSE" | jq -c '.[]')
+
+          for issue in "${ISSUES[@]}"; do
+            CREATED_AT=$(echo "$issue" | jq -r '.created_at')
+            ISSUE_NUMBER=$(echo "$issue" | jq -r '.number')
+
+            # Convert created date to readable format (YYYY-MM-DD)
+            CREATED_DATE=$(date -d "$CREATED_AT" +"%Y-%m-%d" 2>/dev/null || date -u -jf "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +"%Y-%m-%d")
+
+            # Calculate issue age in weeks
+            CREATED_TIMESTAMP=$(date -d "$CREATED_AT" +%s 2>/dev/null || date -u -jf "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +%s)
+            DAYS_OLD=$(( (CURRENT_TIMESTAMP - CREATED_TIMESTAMP) / 86400 ))
+            WEEKS_OLD=$(( DAYS_OLD / 7 ))
+
+            # Fetch issue labels safely
+            LABELS=$(echo "$issue" | jq -r '[.labels[].name] | join(", ")')
+
+            # Determine SLA category
+            SLA_CATEGORY="No SLA"
+            for sla_label in "${SLA_LABELS[@]}"; do
+              if [[ "$LABELS" == *"$sla_label"* ]]; then
+                SLA_CATEGORY="$sla_label"
+                break
+              fi
+            done
+
+            # Group issues by SLA label
+            GROUPED_ISSUES["$SLA_CATEGORY"]+=$'\n'"Issue #$ISSUE_NUMBER - Created: $CREATED_DATE - Week #: $WEEKS_OLD - Labels: $LABELS"
+          done
+
+          # Print grouped issues
+          for sla in "${!GROUPED_ISSUES[@]}"; do
+            echo -e "\nGroup $sla"
+            echo -e "${GROUPED_ISSUES[$sla]}"
+          done
