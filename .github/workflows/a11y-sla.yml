@@ -1,0 +1,28 @@
+name: A11y add SLA Breach Labels for a11y issues
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+  schedule:
+    - cron: "0 0 * * *"  # Runs daily at 00:00 UTC
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fetch-outdated-tickets:
+    runs-on: ubuntu-latest
+
+    env:  # ✅ Define the token once for the entire job
+      GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+
+      - name: Fetch and Label Issues
+        uses: ./.github/actions/a11y-sla-breach-labels
+        with:
+          github-token: ${{ env.GITHUB_TOKEN }}
