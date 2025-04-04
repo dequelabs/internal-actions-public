@@ -6,9 +6,7 @@ inputs:
   token:
     description: "GitHub Token for API requests"
     required: true
-
     
-
 runs:
   using: "composite"
   steps:
