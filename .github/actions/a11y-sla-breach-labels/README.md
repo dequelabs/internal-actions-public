@@ -31,7 +31,7 @@ Each impact level has its own SLA breach threshold:
 
 ## 🚀 Execution Code Example
 
-Create a workflow file (e.g. `.github/workflows/labels.yml`) in your target repo:
+Create a workflow file (e.g. `.github/workflows/a11y-sla-labels.yml`) in your target repo:
 
 ```yaml
 name: A11y SLA Label Bot
@@ -48,14 +48,14 @@ jobs:
 
     steps:
       - name: Run SLA Label Script
-        uses: your-org/sla-label-action@main  # Replace with your actual repo and branch/tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: dequelabs/internal-actions-public/.github/actions/a11y-sla-breach-labels@<commit-hash> # Replace <commit-hash> with the commit hash you want to use (typically the latest commit in the main branch)
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 ---
 
 ## 🧪 How to Test It
-- Add the labels.yml file to your repo under .github/workflows/
+- Add the a11y-sla-labels.yml file to your repo under .github/workflows/
 - Go to the Actions tab in GitHub
 - Click “Run workflow” to test it manually, or wait for the next scheduled run
 - Check the logs and open issues to see updated SLA labels

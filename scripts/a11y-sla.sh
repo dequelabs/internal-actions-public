@@ -60,7 +60,7 @@ for issue in "${ISSUES[@]}"; do
   # Determine impact level
   IMPACT_LEVEL=""
   for level in "${!LABEL_THRESHOLDS[@]}"; do
-    if echo "$LABELS" | grep -iq "$level"; then
+    if echo "$issue" | jq -e '.labels[].name | ascii_downcase | select(. == (\"$level\" | ascii_downcase))' > /dev/null; then
       IMPACT_LEVEL="$level"
       break
     fi
@@ -90,7 +90,7 @@ for issue in "${ISSUES[@]}"; do
   REMOVE_LABELS=()
 
   for sla_label in "${SLA_LABELS[@]}"; do
-    if echo "$LABELS" | grep -iq "$sla_label"; then
+    if echo "$issue" | jq -e '.labels[].name | ascii_downcase | select(. == (\"$level\" | ascii_downcase))' > /dev/null; then
       CURRENT_SLA="$sla_label"
       REMOVE_LABELS+=("$sla_label")
     fi
