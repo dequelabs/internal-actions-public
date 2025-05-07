@@ -1,6 +1,5 @@
 name: "A11y SLA Labels"
 description: "Fetches and updates SLA labels on A11y issues based on SLA benchmarks"
-author: "Manoj"
 
 inputs:
   token:
@@ -10,6 +9,8 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - shell: bash
+      run: ls -al
     - name: Fetch and Label Issues
       shell: bash
       env:
