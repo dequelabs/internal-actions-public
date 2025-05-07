@@ -90,7 +90,7 @@ for issue in "${ISSUES[@]}"; do
   REMOVE_LABELS=()
 
   for sla_label in "${SLA_LABELS[@]}"; do
-    if echo "$issue" | jq -e --arg label "$sla_label" '.labels[].name | select(. == $label)' > /dev/null; then
+    if echo "$issue" | jq -e --arg sla_label "$sla_label" '.labels[].name | ascii_downcase | select(. == ($sla_label | ascii_downcase))' > /dev/null; then
       CURRENT_SLA="$sla_label"
       REMOVE_LABELS+=("$sla_label")
     fi
