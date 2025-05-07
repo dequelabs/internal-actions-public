@@ -1,6 +1,5 @@
 name: "A11y SLA Labels"
 description: "Fetches and updates SLA labels on A11y issues based on SLA benchmarks"
-author: "Manoj"
 
 inputs:
   token:
@@ -8,11 +7,11 @@ inputs:
     required: true
     
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Fetch and Label Issues
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}  # Pass repository explicitly
-      run: scripts/a11y-sla.sh
+      run: ${{ github.action_path }}/scripts/a11y-sla.sh
