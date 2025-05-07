@@ -7,7 +7,7 @@ inputs:
     required: true
     
 runs:
-  using: "composite"
+  using: composite
   steps:
     - shell: bash
       run: ls -al
@@ -16,4 +16,4 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
         GITHUB_REPOSITORY: ${{ github.repository }}  # Pass repository explicitly
-      run: scripts/a11y-sla.sh
+      run: ${{ github.action_path }}/scripts/a11y-sla.sh
