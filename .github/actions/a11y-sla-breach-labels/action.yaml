@@ -9,8 +9,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: ls -al
     - name: Fetch and Label Issues
       shell: bash
       env:
