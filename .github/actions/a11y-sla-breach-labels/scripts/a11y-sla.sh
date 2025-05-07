@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eo pipefail
 
 echo "🚀 Fetching open issues from GitHub API (handling pagination)..."
 
