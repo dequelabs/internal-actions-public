@@ -9,6 +9,7 @@ declare -A LABEL_THRESHOLDS=( ["Blocker"]=4 ["Critical"]=10 ["Serious"]=20 ["Mod
 
 # SLA Labels (only these should be removed/updated)
 SLA_LABELS=("SLA P1" "SLA P2" "SLA P3" "SLA Breach")
+NO_SLA_LABEL="No_SLA_Label"
 
 # Required labels for filtering issues
 REQUIRED_LABELS=("A11y" "VPAT")
@@ -118,11 +119,17 @@ for issue in "${ISSUES[@]}"; do
   fi
 
   # Group issues by SLA label
-  GROUPED_ISSUES["$NEW_SLA"]+=$'\n'"Issue #$ISSUE_NUMBER - Created: $CREATED_DATE - Week #: $WEEKS_OLD - Labels: $LABELS"
+  group_key="${NEW_SLA:-$NO_SLA_LABEL}" # Use placeholder if NEW_SLA is empty
+  GROUPED_ISSUES["$group_key"]+=$'\n'"Issue #$ISSUE_NUMBER - Created: $CREATED_DATE - Week #: $WEEKS_OLD - Labels: $LABELS"
 done
 
 # Print grouped issues summary
-for sla in "${!GROUPED_ISSUES[@]}"; do
-  echo -e "\n🔹 Group: $sla"
-  echo -e "${GROUPED_ISSUES[$sla]}"
+# Define expected groups by merging SLA_LABELS and NO_SLA_LABEL
+EXPECTED_GROUPS=("${SLA_LABELS[@]}" "$NO_SLA_LABEL")
+for sla in "${EXPECTED_GROUPS[@]}"; do
+  # Check if the group exists and has content before printing header
+  if [[ -n "${GROUPED_ISSUES[$sla]}" ]]; then
+      printf "\n🔹 Group: %s\n" "$sla"
+      printf "%b\n" "${GROUPED_ISSUES[$sla]}" 
+  fi
 done
