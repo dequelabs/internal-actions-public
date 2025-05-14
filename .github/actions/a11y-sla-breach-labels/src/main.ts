@@ -45,6 +45,7 @@ function getSLALabel(
   } else if (weeksOld >= impactSLAWeeks - 3) {
     return 'SLA P3'
   }
+  return
 }
 
 // Export the run function for testing and for the action's entry point
