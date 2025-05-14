@@ -95,9 +95,7 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run()
 
-    assert.isTrue(
-      mockCoreGetInput.calledWith('github-token', { required: true })
-    )
+    assert.isTrue(mockCoreGetInput.calledWith('token', { required: true }))
     assert.isTrue(mockOctokitPaginate.calledOnce)
 
     assert.isTrue(

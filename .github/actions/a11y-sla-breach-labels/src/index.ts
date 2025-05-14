@@ -70,7 +70,7 @@ function getSLALabel(
  */
 export async function run(): Promise<void> {
   try {
-    const token = core.getInput('github-token', { required: true })
+    const token = core.getInput('token', { required: true })
     const octokit = github.getOctokit(token)
     const { owner, repo } = github.context.repo
 
