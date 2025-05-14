@@ -1,17 +1,12 @@
-name: "A11y SLA Labels"
-description: "Fetches and updates SLA labels on A11y issues based on SLA benchmarks"
+name: 'A11y SLA Breach Labels'
+description: 'Automatically applies and updates SLA breach priority labels to accessibility issues based on age and impact.'
+author: 'GitHub'
 
 inputs:
-  token:
-    description: "GitHub Token for API requests"
+  github-token:
+    description: 'The GITHUB_TOKEN secret.'
     required: true
-    
+
 runs:
-  using: composite
-  steps:
-    - name: Fetch and Label Issues
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.token }}
-        GITHUB_REPOSITORY: ${{ github.repository }}  # Pass repository explicitly
-      run: ${{ github.action_path }}/scripts/a11y-sla.sh
+  using: 'node20'
+  main: 'dist/index.js'

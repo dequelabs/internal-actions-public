@@ -1,0 +1,65 @@
+{
+  "name": "a11y-sla-breach-labels-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action to manage accessibility SLA breach labels on issues.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build lib/main.js -o dist --source-map --license licenses.txt",
+    "lint": "eslint src/**/*.ts",
+    "test": "mocha -r ts-node/register src/**/*.test.ts",
+    "coverage": "nyc npm run test"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "accessibility",
+    "sla"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.14.2",
+    "@types/sinon": "^17.0.3",
+    "@typescript-eslint/parser": "^7.13.0",
+    "@vercel/ncc": "^0.38.1",
+    "chai": "^4.4.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-github": "^5.0.1",
+    "mocha": "^10.4.0",
+    "nyc": "^17.0.0",
+    "sinon": "^18.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "nyc": {
+    "checkCoverage": true,
+    "extension": [
+      ".ts"
+    ],
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "src/**/*.test.ts",
+      "dist",
+      "lib",
+      "coverage"
+    ],
+    "reporter": [
+      "text-summary",
+      "html"
+    ],
+    "all": true,
+    "statements": 80,
+    "branches": 80,
+    "functions": 80,
+    "lines": 80
+  }
+}
