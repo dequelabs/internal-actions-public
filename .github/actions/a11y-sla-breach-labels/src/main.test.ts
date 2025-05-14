@@ -4,26 +4,20 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { run } from './main'
 
-// Mock Interfaces
-interface MockIssueLabel {
-  name: string
-}
-interface MockIssue {
+// Define an interface for the raw issue structure used in tests
+interface RawTestIssue {
   number: number
-  createdAt: string // ISO string
-  labels: MockIssueLabel[]
+  created_at: string // ISO string
+  labels: Array<
+    | string
+    | { name?: string | null }
+    | Record<string, unknown>
+    | null
+    | undefined
+  >
 }
 
-// Helper to create mock issues
-const createMockIssue = (
-  number: number,
-  createdAt: string,
-  labelNames: string[]
-): MockIssue => ({
-  number,
-  createdAt,
-  labels: labelNames.map(name => ({ name }))
-})
+// Mock Interfaces
 
 // Mocks for @actions/core
 let mockCoreGetInput: sinon.SinonStub
@@ -54,6 +48,16 @@ const getPastDateISO = (options: { weeks?: number; days?: number }): string => {
 
 describe('run (SLA Breach Labels Action)', () => {
   let clock: sinon.SinonFakeTimers
+
+  // Helper function to set up mockOctokitPaginate.callsFake
+  const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
+    mockOctokitPaginate.callsFake(
+      async (_octokitMethod, _octokitParams, transform) => {
+        const mockApiResponse = { data: rawIssues }
+        return transform(mockApiResponse)
+      }
+    )
+  }
 
   beforeEach(() => {
     mockCoreGetInput = sinon.stub(core, 'getInput').returns(MOCK_TOKEN)
@@ -89,7 +93,7 @@ describe('run (SLA Breach Labels Action)', () => {
   })
 
   it('should log "No issues found" and return if no issues are fetched', async () => {
-    mockOctokitPaginate.resolves([])
+    setupMockOctokitPaginate([])
 
     await run()
 
@@ -111,18 +115,18 @@ describe('run (SLA Breach Labels Action)', () => {
   })
 
   it('should log "no recognized impact level" and skip an issue without an impact label', async () => {
-    const issueWithoutImpact = createMockIssue(1, new Date().toISOString(), [
-      'A11y',
-      'VPAT',
-      'SomeOtherLabel'
-    ])
-    mockOctokitPaginate.resolves([issueWithoutImpact])
+    const issueWithoutImpactRaw = {
+      number: 1,
+      created_at: new Date().toISOString(),
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'SomeOtherLabel' }]
+    }
+    setupMockOctokitPaginate([issueWithoutImpactRaw])
 
     await run()
 
     assert.isTrue(
       mockCoreInfo.calledWith(
-        `⚠️ Issue #${issueWithoutImpact.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
+        `⚠️ Issue #${issueWithoutImpactRaw.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
       )
     )
     assert.isFalse(mockCoreSetFailed.called)
@@ -132,13 +136,17 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should apply "SLA Breach" if issue is older than Blocker threshold and remove old P-label', async () => {
     const fiveWeeksAgoISO = getPastDateISO({ weeks: 5 })
-    const issueToBreach = createMockIssue(10, fiveWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker',
-      'SLA P1'
-    ])
-    mockOctokitPaginate.resolves([issueToBreach])
+    const issueToBreachRaw = {
+      number: 10,
+      created_at: fiveWeeksAgoISO,
+      labels: [
+        { name: 'A11y' },
+        { name: 'VPAT' },
+        { name: 'Blocker' },
+        { name: 'SLA P1' }
+      ]
+    }
+    setupMockOctokitPaginate([issueToBreachRaw])
 
     await run()
 
@@ -147,7 +155,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: issueToBreach.number,
+          issue_number: issueToBreachRaw.number,
           name: 'SLA P1'
         })
       )
@@ -158,7 +166,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: issueToBreach.number,
+          issue_number: issueToBreachRaw.number,
           labels: ['SLA Breach']
         })
       )
@@ -169,12 +177,12 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should apply "SLA P1" if issue is 1 week from Blocker threshold (3 weeks old)', async () => {
     const threeWeeksAgoISO = getPastDateISO({ weeks: 3 })
-    const issueForP1 = createMockIssue(11, threeWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker'
-    ])
-    mockOctokitPaginate.resolves([issueForP1])
+    const issueForP1Raw = {
+      number: 11,
+      created_at: threeWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+    }
+    setupMockOctokitPaginate([issueForP1Raw])
 
     await run()
 
@@ -184,7 +192,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: issueForP1.number,
+          issue_number: issueForP1Raw.number,
           labels: ['SLA P1']
         })
       )
@@ -194,12 +202,12 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should apply "SLA P2" if issue is 2 weeks from Blocker threshold (2 weeks old)', async () => {
     const twoWeeksAgoISO = getPastDateISO({ weeks: 2 })
-    const issueForP2 = createMockIssue(12, twoWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker'
-    ])
-    mockOctokitPaginate.resolves([issueForP2])
+    const issueForP2Raw = {
+      number: 12,
+      created_at: twoWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+    }
+    setupMockOctokitPaginate([issueForP2Raw])
 
     await run()
 
@@ -209,7 +217,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: issueForP2.number,
+          issue_number: issueForP2Raw.number,
           labels: ['SLA P2']
         })
       )
@@ -219,12 +227,12 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should apply "SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
     const oneWeekAgoISO = getPastDateISO({ weeks: 1 })
-    const issueForP3 = createMockIssue(13, oneWeekAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker'
-    ])
-    mockOctokitPaginate.resolves([issueForP3])
+    const issueForP3Raw = {
+      number: 13,
+      created_at: oneWeekAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+    }
+    setupMockOctokitPaginate([issueForP3Raw])
 
     await run()
 
@@ -234,7 +242,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: issueForP3.number,
+          issue_number: issueForP3Raw.number,
           labels: ['SLA P3']
         })
       )
@@ -244,12 +252,12 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should not apply any SLA label if issue is too new (0 weeks old for Blocker)', async () => {
     const fewDaysAgoISO = getPastDateISO({ days: 3 })
-    const newIssue = createMockIssue(14, fewDaysAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker'
-    ])
-    mockOctokitPaginate.resolves([newIssue])
+    const newIssueRaw = {
+      number: 14,
+      created_at: fewDaysAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+    }
+    setupMockOctokitPaginate([newIssueRaw])
 
     await run()
 
@@ -260,13 +268,17 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should not change labels if issue already has the correct SLA label (SLA P1)', async () => {
     const threeWeeksAgoISO = getPastDateISO({ weeks: 3 })
-    const issueWithCorrectLabel = createMockIssue(15, threeWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker',
-      'SLA P1'
-    ])
-    mockOctokitPaginate.resolves([issueWithCorrectLabel])
+    const issueWithCorrectLabelRaw = {
+      number: 15,
+      created_at: threeWeeksAgoISO,
+      labels: [
+        { name: 'A11y' },
+        { name: 'VPAT' },
+        { name: 'Blocker' },
+        { name: 'SLA P1' }
+      ]
+    }
+    setupMockOctokitPaginate([issueWithCorrectLabelRaw])
 
     await run()
 
@@ -277,13 +289,17 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should remove an old SLA label if no new SLA label is applicable', async () => {
     const fewDaysAgoISO = getPastDateISO({ days: 3 })
-    const issueWithObsoleteLabel = createMockIssue(16, fewDaysAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker',
-      'SLA P3'
-    ])
-    mockOctokitPaginate.resolves([issueWithObsoleteLabel])
+    const issueWithObsoleteLabelRaw = {
+      number: 16,
+      created_at: fewDaysAgoISO,
+      labels: [
+        { name: 'A11y' },
+        { name: 'VPAT' },
+        { name: 'Blocker' },
+        { name: 'SLA P3' }
+      ]
+    }
+    setupMockOctokitPaginate([issueWithObsoleteLabelRaw])
 
     await run()
 
@@ -296,13 +312,17 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should call core.setFailed if removing a label fails', async () => {
     const fiveWeeksAgoISO = getPastDateISO({ weeks: 5 })
-    const issueToBreach = createMockIssue(20, fiveWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker',
-      'SLA P1'
-    ])
-    mockOctokitPaginate.resolves([issueToBreach])
+    const issueToBreachRaw = {
+      number: 20,
+      created_at: fiveWeeksAgoISO,
+      labels: [
+        { name: 'A11y' },
+        { name: 'VPAT' },
+        { name: 'Blocker' },
+        { name: 'SLA P1' }
+      ]
+    }
+    setupMockOctokitPaginate([issueToBreachRaw])
 
     const removeError = new Error('API_REMOVE_ERROR')
     mockOctokitRemoveLabel.rejects(removeError)
@@ -313,19 +333,19 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.isTrue(mockCoreSetFailed.calledOnce)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
-      `Could not remove label SLA P1 from issue #${issueToBreach.number}: ${removeError.message}`
+      `Could not remove label SLA P1 from issue #${issueToBreachRaw.number}: ${removeError.message}`
     )
     assert.isFalse(mockOctokitAddLabels.called)
   })
 
   it('should call core.setFailed if adding a label fails', async () => {
     const threeWeeksAgoISO = getPastDateISO({ weeks: 3 })
-    const issueForP1 = createMockIssue(21, threeWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker'
-    ])
-    mockOctokitPaginate.resolves([issueForP1])
+    const issueForP1Raw = {
+      number: 21,
+      created_at: threeWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+    }
+    setupMockOctokitPaginate([issueForP1Raw])
 
     const addError = new Error('API_ADD_ERROR')
     mockOctokitAddLabels.rejects(addError)
@@ -336,18 +356,18 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.isTrue(mockCoreSetFailed.calledOnce)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
-      `Could not add label SLA P1 to issue #${issueForP1.number}: ${addError.message}`
+      `Could not add label SLA P1 to issue #${issueForP1Raw.number}: ${addError.message}`
     )
   })
 
   it('should correctly apply "SLA P1" for a "Critical" issue (10w SLA) at 9 weeks old', async () => {
     const nineWeeksAgoISO = getPastDateISO({ weeks: 9 })
-    const criticalIssueForP1 = createMockIssue(30, nineWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Critical'
-    ])
-    mockOctokitPaginate.resolves([criticalIssueForP1])
+    const criticalIssueForP1Raw = {
+      number: 30,
+      created_at: nineWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Critical' }]
+    }
+    setupMockOctokitPaginate([criticalIssueForP1Raw])
 
     await run()
 
@@ -357,7 +377,7 @@ describe('run (SLA Breach Labels Action)', () => {
         sinon.match({
           owner: MOCK_OWNER,
           repo: MOCK_REPO,
-          issue_number: criticalIssueForP1.number,
+          issue_number: criticalIssueForP1Raw.number,
           labels: ['SLA P1']
         })
       )
@@ -367,14 +387,18 @@ describe('run (SLA Breach Labels Action)', () => {
 
   it('should remove multiple existing SLA labels if needed when applying a new one', async () => {
     const fiveWeeksAgoISO = getPastDateISO({ weeks: 5 })
-    const issueWithMultipleOldSLAs = createMockIssue(40, fiveWeeksAgoISO, [
-      'A11y',
-      'VPAT',
-      'Blocker',
-      'SLA P1',
-      'SLA P2'
-    ])
-    mockOctokitPaginate.resolves([issueWithMultipleOldSLAs])
+    const issueWithMultipleOldSLAsRaw = {
+      number: 40,
+      created_at: fiveWeeksAgoISO,
+      labels: [
+        { name: 'A11y' },
+        { name: 'VPAT' },
+        { name: 'Blocker' },
+        { name: 'SLA P1' },
+        { name: 'SLA P2' }
+      ]
+    }
+    setupMockOctokitPaginate([issueWithMultipleOldSLAsRaw])
 
     await run()
 
@@ -392,5 +416,51 @@ describe('run (SLA Breach Labels Action)', () => {
       )
     )
     assert.isFalse(mockCoreSetFailed.called)
+  })
+
+  it('should call core.setFailed with a generic message for non-Error exceptions', async () => {
+    const nonErrorObject = { message: 'not an error instance' }
+    // For this specific test, we want to simulate a non-Error throw directly from paginate setup
+    mockOctokitPaginate.callsFake(async () => {
+      throw nonErrorObject
+    })
+
+    await run()
+
+    assert.isTrue(mockCoreSetFailed.calledOnce)
+    assert.strictEqual(
+      mockCoreSetFailed.firstCall.args[0],
+      `An unknown error occurred: ${String(nonErrorObject)}`
+    )
+  })
+
+  it('should correctly map various label formats from API response', async () => {
+    const issuesWithVariousLabelsRaw: RawTestIssue[] = [
+      {
+        number: 100,
+        created_at: new Date().toISOString(),
+        // Provide a mix of label types to cover all branches in the transformation:
+        labels: [
+          'string-label', // For: typeof label === 'string'
+          { name: 'name-prop-label' }, // For: typeof label !== 'string' AND label.name is truthy
+          { name: null }, // For: typeof label !== 'string' AND label.name is null (falsy)
+          { id: 12345, description: 'object without name' }, // For: typeof label !== 'string' AND label.name is undefined (falsy)
+          null, // For: typeof label !== 'string' (null type), label?.name is undefined (falsy)
+          undefined, // For: typeof label !== 'string' (undefined type), label?.name is undefined (falsy)
+          { name: '' } // For: typeof label !== 'string' AND label.name is empty string (falsy)
+        ]
+      }
+    ]
+    setupMockOctokitPaginate(issuesWithVariousLabelsRaw)
+
+    await run()
+
+    assert.isTrue(mockOctokitPaginate.calledOnce)
+    assert.isFalse(mockCoreSetFailed.called)
+    assert.isTrue(
+      mockCoreInfo.calledWith(
+        `⚠️ Issue #${issuesWithVariousLabelsRaw[0].number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
+      )
+    )
   })
 })
