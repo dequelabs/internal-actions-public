@@ -51,6 +51,7 @@ function getSLALabel(weeksOld, impactLevel) {
     else if (weeksOld >= impactSLAWeeks - 3) {
         return 'SLA P3';
     }
+    return;
 }
 async function run() {
     try {

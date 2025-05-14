@@ -5,10 +5,12 @@
   "description": "GitHub Action to manage accessibility SLA breach labels on issues.",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && ncc build lib/main.js -o dist --source-map --license licenses.txt",
-    "lint": "eslint src/**/*.ts",
-    "test": "mocha -r ts-node/register src/**/*.test.ts",
-    "coverage": "nyc npm run test"
+    "prebuild": "rimraf dist",
+    "build": "ncc build src/main.ts --license ../../../licenses.txt",
+    "test": "mocha src/*.test.ts",
+    "coverage": "nyc npm run test",
+    "fmt": "prettier --write \"src/**/*.{js,ts,tsx,json,md,css,html}\"",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\""
   },
   "keywords": [
     "github",
