@@ -2,7 +2,7 @@ import { assert } from 'chai'
 import sinon from 'sinon'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { run } from './main'
+import { run } from './'
 
 // Define an interface for the raw issue structure used in tests
 interface RawTestIssue {
@@ -16,8 +16,6 @@ interface RawTestIssue {
     | undefined
   >
 }
-
-// Mock Interfaces
 
 // Mocks for @actions/core
 let mockCoreGetInput: sinon.SinonStub
@@ -46,18 +44,18 @@ const getPastDateISO = (options: { weeks?: number; days?: number }): string => {
   return pastDate.toISOString()
 }
 
+// Helper function to set up mockOctokitPaginate.callsFake
+const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
+  mockOctokitPaginate.callsFake(
+    async (_octokitMethod, _octokitParams, transform) => {
+      const mockApiResponse = { data: rawIssues }
+      return transform(mockApiResponse)
+    }
+  )
+}
+
 describe('run (SLA Breach Labels Action)', () => {
   let clock: sinon.SinonFakeTimers
-
-  // Helper function to set up mockOctokitPaginate.callsFake
-  const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
-    mockOctokitPaginate.callsFake(
-      async (_octokitMethod, _octokitParams, transform) => {
-        const mockApiResponse = { data: rawIssues }
-        return transform(mockApiResponse)
-      }
-    )
-  }
 
   beforeEach(() => {
     mockCoreGetInput = sinon.stub(core, 'getInput').returns(MOCK_TOKEN)
