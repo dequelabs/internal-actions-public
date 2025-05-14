@@ -1,6 +1,5 @@
 name: 'A11y SLA Breach Labels'
 description: 'Automatically applies and updates SLA breach priority labels to accessibility issues based on age and impact.'
-author: 'GitHub'
 
 inputs:
   github-token:

@@ -81,7 +81,7 @@ describe('run (SLA Breach Labels Action)', () => {
 
     // Mock Date to control time-based calculations (weeksOld)
     // Current date set to a Monday for easier week calculations if needed
-    now = new Date('2024-01-29T12:00:00Z') // Initialize now here
+    now = new Date('2024-01-29T12:00:00Z')
     clock = sinon.useFakeTimers(now.getTime())
   })
 

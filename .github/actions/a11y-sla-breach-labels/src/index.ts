@@ -48,7 +48,26 @@ function getSLALabel(
   return
 }
 
-// Export the run function for testing and for the action's entry point
+/**
+ * Main function for the GitHub Action.
+ *
+ * This function performs the following steps:
+ * 1. Retrieves the GitHub token from action inputs.
+ * 2. Initializes the Octokit client for GitHub API interaction.
+ * 3. Fetches all open issues from the repository that are labeled with both 'A11y' and 'VPAT'.
+ * 4. If no such issues are found, logs a message and exits.
+ * 5. For each fetched issue:
+ *    a. Calculates the age of the issue in weeks.
+ *    b. Determines the issue's impact level (Blocker, Critical, Serious, or Moderate) by checking its existing labels.
+ *    c. If no recognized impact level label is found, logs a warning and skips the issue.
+ *    d. Based on the issue's age and impact level, determines the appropriate SLA label
+ *       (SLA P1, SLA P2, SLA P3, or SLA Breach) according to predefined thresholds.
+ *    e. Identifies any existing SLA labels on the issue that are different from the newly determined SLA label.
+ *    f. Removes these incorrect or outdated SLA labels from the issue.
+ *    g. If a new SLA label is determined and is not already present on the issue, adds the new SLA label.
+ * 6. If any errors occur during the process, catches them, logs an appropriate message, and sets the action to failed.
+ * The `run` function is executed when the script is run.
+ */
 export async function run(): Promise<void> {
   try {
     const token = core.getInput('github-token', { required: true })
