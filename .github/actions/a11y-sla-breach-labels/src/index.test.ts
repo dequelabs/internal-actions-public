@@ -466,7 +466,7 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run()
 
-    assert.isFalse(mockOctokitRemoveLabel.called) // No old P-label to remove initially
+    assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
       mockOctokitAddLabels.calledOnceWith(
         sinon.match({
@@ -516,7 +516,7 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run()
 
-    assert.isFalse(mockOctokitRemoveLabel.called) // No old P-label to remove initially
+    assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
       mockOctokitAddLabels.calledOnceWith(
         sinon.match({
