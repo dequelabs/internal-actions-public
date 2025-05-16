@@ -30002,14 +30002,7 @@ async function run() {
             const createdAtTimestamp = Math.floor(new Date(issue.createdAt).getTime() / 1000);
             const daysOld = Math.floor((currentTimestamp - createdAtTimestamp) / 86400);
             const weeksOld = Math.floor(daysOld / 7);
-            let impactLevel = undefined;
-            for (const levelKey in LABEL_THRESHOLDS) {
-                const currentImpactLevel = levelKey;
-                if (issue.labels.some(label => label.name.toLowerCase() === currentImpactLevel.toLowerCase())) {
-                    impactLevel = currentImpactLevel;
-                    break;
-                }
-            }
+            const impactLevel = Object.keys(LABEL_THRESHOLDS).find(levelKey => issue.labels.some(label => label.name.toLowerCase() === levelKey.toLowerCase()));
             if (!impactLevel) {
                 core.info(`⚠️ Issue #${issue.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`);
                 continue;
@@ -30054,12 +30047,9 @@ async function run() {
     }
     catch (e) {
         const error = e;
-        if (error instanceof Error) {
-            core.setFailed(error.message);
-        }
-        else {
-            core.setFailed(`An unknown error occurred: ${String(error)}`);
-        }
+        core.setFailed(error instanceof Error
+            ? error.message
+            : `An unknown error occurred: ${String(error)}`);
     }
 }
 run();

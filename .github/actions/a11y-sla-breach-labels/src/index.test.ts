@@ -430,6 +430,106 @@ describe('run (SLA Breach Labels Action)', () => {
     )
   })
 
+  it('should correctly apply "SLA P1" for a "Serious" issue (20w SLA) at 19 weeks old', async () => {
+    const nineteenWeeksAgoISO = getPastDateISO({ weeks: 19 })
+    const seriousIssueForP1Raw = {
+      number: 50,
+      created_at: nineteenWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Serious' }]
+    }
+    setupMockOctokitPaginate([seriousIssueForP1Raw])
+
+    await run()
+
+    assert.isFalse(mockOctokitRemoveLabel.called)
+    assert.isTrue(
+      mockOctokitAddLabels.calledOnceWith(
+        sinon.match({
+          owner: MOCK_OWNER,
+          repo: MOCK_REPO,
+          issue_number: seriousIssueForP1Raw.number,
+          labels: ['SLA P1']
+        })
+      )
+    )
+    assert.isFalse(mockCoreSetFailed.called)
+  })
+
+  it('should correctly apply "SLA Breach" for a "Serious" issue (20w SLA) at 20 weeks old', async () => {
+    const twentyWeeksAgoISO = getPastDateISO({ weeks: 20 })
+    const seriousIssueToBreachRaw = {
+      number: 51,
+      created_at: twentyWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Serious' }]
+    }
+    setupMockOctokitPaginate([seriousIssueToBreachRaw])
+
+    await run()
+
+    assert.isFalse(mockOctokitRemoveLabel.called) // No old P-label to remove initially
+    assert.isTrue(
+      mockOctokitAddLabels.calledOnceWith(
+        sinon.match({
+          owner: MOCK_OWNER,
+          repo: MOCK_REPO,
+          issue_number: seriousIssueToBreachRaw.number,
+          labels: ['SLA Breach']
+        })
+      )
+    )
+    assert.isFalse(mockCoreSetFailed.called)
+  })
+
+  it('should correctly apply "SLA P1" for a "Moderate" issue (30w SLA) at 29 weeks old', async () => {
+    const twentyNineWeeksAgoISO = getPastDateISO({ weeks: 29 })
+    const moderateIssueForP1Raw = {
+      number: 60,
+      created_at: twentyNineWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Moderate' }]
+    }
+    setupMockOctokitPaginate([moderateIssueForP1Raw])
+
+    await run()
+
+    assert.isFalse(mockOctokitRemoveLabel.called)
+    assert.isTrue(
+      mockOctokitAddLabels.calledOnceWith(
+        sinon.match({
+          owner: MOCK_OWNER,
+          repo: MOCK_REPO,
+          issue_number: moderateIssueForP1Raw.number,
+          labels: ['SLA P1']
+        })
+      )
+    )
+    assert.isFalse(mockCoreSetFailed.called)
+  })
+
+  it('should correctly apply "SLA Breach" for a "Moderate" issue (30w SLA) at 30 weeks old', async () => {
+    const thirtyWeeksAgoISO = getPastDateISO({ weeks: 30 })
+    const moderateIssueToBreachRaw = {
+      number: 61,
+      created_at: thirtyWeeksAgoISO,
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Moderate' }]
+    }
+    setupMockOctokitPaginate([moderateIssueToBreachRaw])
+
+    await run()
+
+    assert.isFalse(mockOctokitRemoveLabel.called) // No old P-label to remove initially
+    assert.isTrue(
+      mockOctokitAddLabels.calledOnceWith(
+        sinon.match({
+          owner: MOCK_OWNER,
+          repo: MOCK_REPO,
+          issue_number: moderateIssueToBreachRaw.number,
+          labels: ['SLA Breach']
+        })
+      )
+    )
+    assert.isFalse(mockCoreSetFailed.called)
+  })
+
   it('should correctly map various label formats from API response', async () => {
     const issuesWithVariousLabelsRaw: RawTestIssue[] = [
       {

@@ -112,19 +112,11 @@ export async function run(): Promise<void> {
       )
       const weeksOld = Math.floor(daysOld / 7)
 
-      let impactLevel: ImpactLevel | undefined = undefined
-      for (const levelKey in LABEL_THRESHOLDS) {
-        const currentImpactLevel = levelKey as ImpactLevel
-        if (
-          issue.labels.some(
-            label =>
-              label.name.toLowerCase() === currentImpactLevel.toLowerCase()
-          )
-        ) {
-          impactLevel = currentImpactLevel
-          break
-        }
-      }
+      const impactLevel = Object.keys(LABEL_THRESHOLDS).find(levelKey =>
+        issue.labels.some(
+          label => label.name.toLowerCase() === levelKey.toLowerCase()
+        )
+      ) as ImpactLevel | undefined
 
       if (!impactLevel) {
         core.info(
@@ -182,11 +174,11 @@ export async function run(): Promise<void> {
     }
   } catch (e) {
     const error = e as Error
-    if (error instanceof Error) {
-      core.setFailed(error.message)
-    } else {
-      core.setFailed(`An unknown error occurred: ${String(error)}`)
-    }
+    core.setFailed(
+      error instanceof Error
+        ? error.message
+        : `An unknown error occurred: ${String(error)}`
+    )
   }
 }
 
