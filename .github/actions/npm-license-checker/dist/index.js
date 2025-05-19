@@ -39352,7 +39352,8 @@ async function run({ core, licenseChecker }) {
             detailsOutputFormat,
             clarificationsPath
         });
-        core.info(licenseChecker.asSummary(result));
+        const licenseCheckerSummary = licenseChecker.asSummary(result);
+        core.info(licenseCheckerSummary);
     }
     catch (error) {
         core.setFailed(`Error checking licenses: ${error.message}`);

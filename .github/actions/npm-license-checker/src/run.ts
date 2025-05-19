@@ -100,7 +100,9 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       clarificationsPath
     })
 
-    core.info(licenseChecker.asSummary(result))
+    const licenseCheckerSummary = licenseChecker.asSummary(result)
+
+    core.info(licenseCheckerSummary)
   } catch (error) {
     core.setFailed(`Error checking licenses: ${(error as Error).message}`)
   }
