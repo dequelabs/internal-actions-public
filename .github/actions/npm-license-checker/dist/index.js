@@ -39354,7 +39354,9 @@ async function run({ core, licenseChecker }) {
             detailsOutputPath,
             detailsOutputFormat,
             ...(excludePackages.trim().length && { excludePackages }),
-            ...(excludePackagesStartingWith.trim().length && { excludePackagesStartingWith }),
+            ...(excludePackagesStartingWith.trim().length && {
+                excludePackagesStartingWith
+            }),
             ...(clarificationsPath.trim().length && { clarificationsPath })
         };
         core.info(`Provided options:\n${JSON.stringify(options)}`);
