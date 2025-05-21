@@ -1,2 +1,2 @@
-import { CheckLicensesOptions, LicenseChecker, ModuleInfos } from './types';
-export default function checkLicenses(licenseChecker: LicenseChecker, options: CheckLicensesOptions): Promise<ModuleInfos>;
+import { CheckLicensesOptions, Core, LicenseChecker, ModuleInfos } from './types';
+export default function checkLicenses(licenseChecker: LicenseChecker, options: CheckLicensesOptions, core: Core): Promise<ModuleInfos>;

@@ -1,12 +1,13 @@
 import fs from 'fs'
 import path from 'path'
+import checkLicenses from './checkLicenses'
 import {
   DependencyType,
   RunOptions,
   DetailsOutputFormat,
-  CustomFields
+  CustomFields,
+  CheckLicensesOptions
 } from './types'
-import checkLicenses from './checkLicenses'
 
 export default async function run({ core, licenseChecker }: RunOptions) {
   try {
@@ -72,12 +73,16 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       licenseText: ''
     }
     if (customFieldsPath) {
+      core.info(
+        `Provided custom fields path "${customFieldsPath}", reading custom fields...`
+      )
       try {
         const customFieldsContent = fs.readFileSync(
           path.resolve(customFieldsPath),
           'utf8'
         )
         customFields = JSON.parse(customFieldsContent)
+        core.info(`Custom fields: ${customFieldsContent}`)
       } catch (error) {
         core.setFailed(
           `Error reading or parsing customFieldsPath: ${
@@ -88,21 +93,30 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       }
     }
 
-    const result = await checkLicenses(licenseChecker, {
+    const options: CheckLicensesOptions = {
       startPath,
       dependencyType,
       customFields,
       onlyAllow,
       detailsOutputPath,
-      excludePackages,
-      excludePackagesStartingWith,
       detailsOutputFormat,
-      clarificationsPath
-    })
+      ...(excludePackages.trim().length && { excludePackages }),
+      ...(excludePackagesStartingWith.trim().length && {
+        excludePackagesStartingWith
+      }),
+      ...(clarificationsPath.trim().length && { clarificationsPath })
+    }
+    core.info(`Provided options:\n${JSON.stringify(options)}`)
 
+    const result = await checkLicenses(licenseChecker, options, core)
     const licenseCheckerSummary = licenseChecker.asSummary(result)
+    const hasLicenseCheckerSummary = !!licenseCheckerSummary.length
 
-    core.info(licenseCheckerSummary)
+    if (hasLicenseCheckerSummary) {
+      core.info(`License checker summary:\n${licenseCheckerSummary}`)
+    } else {
+      throw new Error('No licenses found')
+    }
   } catch (error) {
     core.setFailed(`Error checking licenses: ${(error as Error).message}`)
   }
