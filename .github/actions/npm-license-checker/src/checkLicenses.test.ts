@@ -40,6 +40,11 @@ describe('checkLicenses', () => {
       detailsOutputFormat: DetailsOutputFormat.JSON,
       clarificationsPath: './clarifications.json'
     }
+
+    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
+      // @ts-expect-error - The first argument can be an error or null
+      callback(null, {})
+    })
   })
 
   afterEach(() => {
@@ -98,12 +103,6 @@ describe('checkLicenses', () => {
 
   it('should handle development dependencies', async () => {
     options.dependencyType = DependencyType.Development
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
@@ -114,12 +113,6 @@ describe('checkLicenses', () => {
 
   it('should handle CSV output format', async () => {
     options.detailsOutputFormat = DetailsOutputFormat.CSV
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -131,12 +124,6 @@ describe('checkLicenses', () => {
 
   it('should handle Markdown output format', async () => {
     options.detailsOutputFormat = DetailsOutputFormat.Markdown
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -148,12 +135,6 @@ describe('checkLicenses', () => {
 
   it('should handle PlainVertical output format', async () => {
     options.detailsOutputFormat = DetailsOutputFormat.PlainVertical
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -166,12 +147,6 @@ describe('checkLicenses', () => {
 
   it('should handle detailsOutputPath correctly', async () => {
     options.detailsOutputPath = './license-output.json'
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
@@ -180,15 +155,12 @@ describe('checkLicenses', () => {
   })
 
   it('should log license checker options', async () => {
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.isTrue(core.info.calledOnce)
+
     const infoMessage = core.info.firstCall.args[0]
+
     assert.include(
       infoMessage,
       'Start checking licenses with the following options'
@@ -206,12 +178,6 @@ describe('checkLicenses', () => {
     }
 
     options.customFields = customFieldsObj
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
@@ -220,11 +186,6 @@ describe('checkLicenses', () => {
   })
 
   it('should always set summary to true', async () => {
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
@@ -233,83 +194,69 @@ describe('checkLicenses', () => {
   })
 
   it('should handle undefined excludePackages', async () => {
-    delete options.excludePackages
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- for test purposes
+    const { excludePackages, ...optionsWithoutExcludePackages } = options
 
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
-    await checkLicenses(licenseChecker, options, core)
+    await checkLicenses(licenseChecker, optionsWithoutExcludePackages, core)
 
     const initOptions = licenseChecker.init.firstCall.args[0]
+
     assert.isUndefined(initOptions.excludePackages)
   })
 
   it('should handle undefined excludePackagesStartingWith', async () => {
-    delete options.excludePackagesStartingWith
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- for testing
+      excludePackagesStartingWith,
+      ...optionsWithoutExcludePackagesStartingWith
+    } = options
 
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
-    await checkLicenses(licenseChecker, options, core)
+    await checkLicenses(
+      licenseChecker,
+      optionsWithoutExcludePackagesStartingWith,
+      core
+    )
 
     const initOptions = licenseChecker.init.firstCall.args[0]
+
     assert.isUndefined(initOptions.excludePackagesStartingWith)
   })
 
   it('should handle undefined onlyAllow', async () => {
-    delete options.onlyAllow
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- for test purposes
+    const { onlyAllow, ...optionsWithoutOnlyAllow } = options
 
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
-    await checkLicenses(licenseChecker, options, core)
+    await checkLicenses(licenseChecker, optionsWithoutOnlyAllow, core)
 
     const initOptions = licenseChecker.init.firstCall.args[0]
+
     assert.isUndefined(initOptions.onlyAllow)
   })
 
   it('should handle undefined clarificationsPath', async () => {
-    delete options.clarificationsPath
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- for test purposes
+    const { clarificationsPath, ...optionsWithoutClarificationsPath } = options
 
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
-    await checkLicenses(licenseChecker, options, core)
+    await checkLicenses(licenseChecker, optionsWithoutClarificationsPath, core)
 
     const initOptions = licenseChecker.init.firstCall.args[0]
+
     assert.isUndefined(initOptions.clarificationsFile)
   })
 
   it('should handle undefined customFields', async () => {
-    delete options.customFields
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- for test purposes
+    const { customFields, ...optionsWithoutCustomFields } = options
 
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
-    await checkLicenses(licenseChecker, options, core)
+    await checkLicenses(licenseChecker, optionsWithoutCustomFields, core)
 
     const initOptions = licenseChecker.init.firstCall.args[0]
+
     assert.isUndefined(initOptions.customFormat)
   })
 
   it('should handle all dependencies type', async () => {
     options.dependencyType = DependencyType.All
-
-    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
-      // @ts-expect-error - The first argument can be an error or null
-      callback(null, {})
-    })
-
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
