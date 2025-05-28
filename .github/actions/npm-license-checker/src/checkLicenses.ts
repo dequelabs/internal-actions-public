@@ -39,8 +39,7 @@ export default async function checkLicenses(
     customFormat: customFields,
     excludePackages,
     excludePackagesStartingWith,
-    clarificationsFile: clarificationsPath,
-    summary: true
+    clarificationsFile: clarificationsPath
   }
   core.info(
     `Start checking licenses with the following options:\n${JSON.stringify(licenseCheckerOptions)}`

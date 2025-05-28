@@ -80,8 +80,7 @@ describe('checkLicenses', () => {
       customFormat: options.customFields,
       excludePackages: options.excludePackages,
       excludePackagesStartingWith: options.excludePackagesStartingWith,
-      clarificationsFile: options.clarificationsPath,
-      summary: true
+      clarificationsFile: options.clarificationsPath
     })
   })
 
@@ -182,14 +181,6 @@ describe('checkLicenses', () => {
 
     assert.include(licenseChecker.init.firstCall.args[0], {
       customFormat: customFieldsObj
-    })
-  })
-
-  it('should always set summary to true', async () => {
-    await checkLicenses(licenseChecker, options, core)
-
-    assert.include(licenseChecker.init.firstCall.args[0], {
-      summary: true
     })
   })
 
