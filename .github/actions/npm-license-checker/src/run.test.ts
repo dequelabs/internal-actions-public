@@ -51,6 +51,12 @@ describe('run', () => {
     // Default input values
     core.getInput.withArgs('dependency-type').returns(DependencyType.Production)
     core.getInput.withArgs('start-path').returns('./package.json')
+    core.getInput.withArgs('custom-fields-path').returns('')
+    core.getInput.withArgs('clarifications-path').returns('')
+    core.getInput.withArgs('only-allow').returns('')
+    core.getInput.withArgs('details-output-path').returns('')
+    core.getInput.withArgs('exclude-packages').returns('')
+    core.getInput.withArgs('exclude-packages-starting-with').returns('')
     core.getInput
       .withArgs('details-output-format')
       .returns(DetailsOutputFormat.JSON)
@@ -58,15 +64,6 @@ describe('run', () => {
 
   afterEach(() => {
     sinon.restore()
-  })
-
-  it('should run successfully with valid inputs', async () => {
-    licenseChecker.asSummary.returns('License check completed')
-
-    await run({ core, licenseChecker })
-
-    assert.isFalse(core.setFailed.called)
-    assert.isTrue(core.info.calledWith('License check completed'))
   })
 
   it('should fail with invalid dependency-type', async () => {
@@ -110,7 +107,7 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isFalse(core.setFailed.called)
+    assert.isTrue(core.setFailed.notCalled)
   })
 
   it('should fail when custom-fields-path does not exist', async () => {
@@ -166,5 +163,145 @@ describe('run', () => {
 
     assert.isTrue(core.setFailed.called)
     assert.include(core.setFailed.firstCall.args[0], 'License check failed')
+  })
+
+  it('should handle clarificationsPath correctly when file exists', async () => {
+    const clarificationsPath = './clarifications.json'
+
+    core.getInput.withArgs('clarifications-path').returns(clarificationsPath)
+    existsSyncStub.withArgs(path.resolve(clarificationsPath)).returns(true)
+
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+    assert.include(
+      JSON.stringify(licenseChecker.init.firstCall.args[0]),
+      clarificationsPath
+    )
+  })
+
+  it('should handle excludePackages correctly when provided', async () => {
+    const excludePackages = 'package1,package2'
+
+    core.getInput.withArgs('exclude-packages').returns(excludePackages)
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.include(JSON.stringify(options), excludePackages)
+  })
+
+  it('should skip excludePackages if not provided', async () => {
+    core.getInput.withArgs('exclude-packages').returns('')
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.notInclude(JSON.stringify(options), 'excludePackages')
+  })
+
+  it('should handle excludePackagesStartingWith correctly when provided', async () => {
+    const excludePackagesStartingWith = '@scope,react-'
+
+    core.getInput
+      .withArgs('exclude-packages-starting-with')
+      .returns(excludePackagesStartingWith)
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.include(JSON.stringify(options), excludePackagesStartingWith)
+  })
+
+  it('should skip excludePackagesStartingWith if not provided', async () => {
+    core.getInput.withArgs('exclude-packages-starting-with').returns('')
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.notInclude(JSON.stringify(options), 'excludePackagesStartingWith')
+  })
+
+  it('should handle onlyAllow parameter correctly', async () => {
+    const onlyAllow = 'MIT,Apache-2.0'
+
+    core.getInput.withArgs('only-allow').returns(onlyAllow)
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.include(JSON.stringify(options), onlyAllow)
+  })
+
+  it('should handle detailsOutputPath parameter correctly', async () => {
+    const detailsOutputPath = './license-details.json'
+
+    core.getInput.withArgs('details-output-path').returns(detailsOutputPath)
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.notCalled)
+
+    const options = licenseChecker.init.firstCall.args[0]
+
+    assert.include(JSON.stringify(options), detailsOutputPath)
+  })
+
+  it('should fail when licenseCheckerSummary is empty', async () => {
+    licenseChecker.asSummary.returns('')
+
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.called)
+    assert.include(core.setFailed.firstCall.args[0], 'No licenses found')
+  })
+
+  it('should log info with provided options', async () => {
+    core.getInput.withArgs('only-allow').returns('MIT')
+    core.getInput.withArgs('details-output-path').returns('./details.json')
+
+    await run({ core, licenseChecker })
+
+    const infoCall = core.info
+      .getCalls()
+      .find(call => call.args[0].includes('Provided options'))
+    assert.isDefined(infoCall)
+    assert.include(infoCall.args[0], 'MIT')
+    assert.include(infoCall.args[0], './details.json')
+  })
+
+  it('should log license checker summary when available', async () => {
+    const summary = 'License summary with details'
+    licenseChecker.asSummary.returns(summary)
+
+    await run({ core, licenseChecker })
+
+    const infoCall = core.info
+      .getCalls()
+      .find(call => call.args[0].includes(summary))
+    assert.isDefined(infoCall)
+    assert.include(infoCall.args[0], summary)
+  })
+
+  it('should handle errors during execution', async () => {
+    licenseChecker.init.throws(new Error('Unexpected error occurred'))
+
+    await run({ core, licenseChecker })
+
+    assert.isTrue(core.setFailed.called)
+    assert.include(core.setFailed.firstCall.args[0], 'Error checking licenses')
+    assert.include(
+      core.setFailed.firstCall.args[0],
+      'Unexpected error occurred'
+    )
   })
 })

@@ -39209,24 +39209,26 @@ module.exports = function(argument) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = checkLicenses;
 const types_1 = __nccwpck_require__(2658);
-async function checkLicenses(licenseChecker, options) {
+async function checkLicenses(licenseChecker, options, core) {
     const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat, clarificationsPath } = options;
+    const licenseCheckerOptions = {
+        json: detailsOutputFormat === types_1.DetailsOutputFormat.JSON,
+        csv: detailsOutputFormat === types_1.DetailsOutputFormat.CSV,
+        markdown: detailsOutputFormat === types_1.DetailsOutputFormat.Markdown,
+        plainVertical: detailsOutputFormat === types_1.DetailsOutputFormat.PlainVertical,
+        start: startPath,
+        production: dependencyType === types_1.DependencyType.Production,
+        development: dependencyType === types_1.DependencyType.Development,
+        out: detailsOutputPath,
+        onlyAllow,
+        customFormat: customFields,
+        excludePackages,
+        excludePackagesStartingWith,
+        clarificationsFile: clarificationsPath
+    };
+    core.info(`Start checking licenses with the following options:\n${JSON.stringify(licenseCheckerOptions)}`);
     return new Promise((resolve, reject) => {
-        licenseChecker.init({
-            json: detailsOutputFormat === types_1.DetailsOutputFormat.JSON,
-            csv: detailsOutputFormat === types_1.DetailsOutputFormat.CSV,
-            markdown: detailsOutputFormat === types_1.DetailsOutputFormat.Markdown,
-            plainVertical: detailsOutputFormat === types_1.DetailsOutputFormat.PlainVertical,
-            start: startPath,
-            production: dependencyType === types_1.DependencyType.Production,
-            development: dependencyType === types_1.DependencyType.Development,
-            out: detailsOutputPath,
-            onlyAllow,
-            customFormat: customFields,
-            excludePackages,
-            excludePackagesStartingWith,
-            clarificationsFile: clarificationsPath
-        }, (err, packages) => {
+        licenseChecker.init(licenseCheckerOptions, (err, packages) => {
             if (err) {
                 reject(err);
             }
@@ -39292,8 +39294,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = run;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __importDefault(__nccwpck_require__(6928));
-const types_1 = __nccwpck_require__(2658);
 const checkLicenses_1 = __importDefault(__nccwpck_require__(8491));
+const types_1 = __nccwpck_require__(2658);
 async function run({ core, licenseChecker }) {
     try {
         const dependencyType = core.getInput('dependency-type');
@@ -39332,27 +39334,40 @@ async function run({ core, licenseChecker }) {
             licenseText: ''
         };
         if (customFieldsPath) {
+            core.info(`Provided custom fields path "${customFieldsPath}", reading custom fields...`);
             try {
                 const customFieldsContent = fs_1.default.readFileSync(path_1.default.resolve(customFieldsPath), 'utf8');
                 customFields = JSON.parse(customFieldsContent);
+                core.info(`Custom fields: ${customFieldsContent}`);
             }
             catch (error) {
                 core.setFailed(`Error reading or parsing customFieldsPath: ${error.message}`);
                 return;
             }
         }
-        const result = await (0, checkLicenses_1.default)(licenseChecker, {
+        const options = {
             startPath,
             dependencyType,
             customFields,
             onlyAllow,
             detailsOutputPath,
-            excludePackages,
-            excludePackagesStartingWith,
             detailsOutputFormat,
-            clarificationsPath
-        });
-        core.info(licenseChecker.asSummary(result));
+            ...(excludePackages.trim().length && { excludePackages }),
+            ...(excludePackagesStartingWith.trim().length && {
+                excludePackagesStartingWith
+            }),
+            ...(clarificationsPath.trim().length && { clarificationsPath })
+        };
+        core.info(`Provided options:\n${JSON.stringify(options)}`);
+        const result = await (0, checkLicenses_1.default)(licenseChecker, options, core);
+        const licenseCheckerSummary = licenseChecker.asSummary(result);
+        const hasLicenseCheckerSummary = !!licenseCheckerSummary.length;
+        if (hasLicenseCheckerSummary) {
+            core.info(`License checker summary:\n${licenseCheckerSummary}`);
+        }
+        else {
+            throw new Error('No licenses found');
+        }
     }
     catch (error) {
         core.setFailed(`Error checking licenses: ${error.message}`);
