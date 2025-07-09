@@ -1,0 +1,30 @@
+name: Notify Slack on Failure
+description: Send a Slack notification when a GitHub Action fails.
+inputs:
+  slack_webhook_url:
+    description: The Slack webhook URL to send notifications to.
+    required: true
+    secret: true
+  title:
+    description: The title of the Slack notification.
+    required: true
+  slack_channel:
+    description: The Slack channel to send the notification to.
+    required: true
+  slack_message:
+    description: The message to include in the Slack notification.
+    required: false
+    default: 'Go check what happened.'
+
+runs:
+  using: composite
+  steps:
+    - name: Send Slack notification
+      uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661
+      env:
+        SLACK_WEBHOOK: ${{ inputs.slack_webhook_url }}
+        SLACK_TITLE: ${{ inputs.title }}
+        SLACK_MESSAGE: '${{ inputs.slack_message }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        SLACK_COLOR: failure
+        SLACK_CHANNEL: ${{ inputs.slack_channel }}
+        MSG_MINIMAL: true
