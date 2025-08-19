@@ -1,0 +1,43 @@
+{
+  "name": "create-temp-package-json-v1",
+  "version": "1.0.0",
+  "description": "A GitHub Action to create a temporary `package.json` with production dependencies from specified workspaces.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dequelabs/axe-api-team-public.git"
+  },
+  "author": "",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/dequelabs/axe-api-team-public/issues"
+  },
+  "homepage": "https://github.com/dequelabs/axe-api-team-public#readme",
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "ncc build src/index.ts --license ../../../licenses.txt",
+    "test": "mocha src/*.test.ts",
+    "coverage": "nyc npm run test",
+    "fmt": "prettier --write \"src/**/*.{js,ts,tsx,json,md,css,html}\"",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\""
+  },
+  "nyc": {
+    "checkCoverage": true,
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "text-summary",
+      "html"
+    ],
+    "statements": 100,
+    "branches": 85,
+    "functions": 100,
+    "lines": 100,
+    "exclude": [
+      "dist",
+      "coverage",
+      "**/*.test.ts"
+    ]
+  },
+  "devDependencies": {}
+}

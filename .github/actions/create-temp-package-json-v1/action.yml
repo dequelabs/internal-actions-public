@@ -1,0 +1,19 @@
+name: 'Create Temporary Package JSON'
+description: 'Creates a temporary package.json with production dependencies from specified workspaces'
+
+inputs:
+  workspace-path-list:
+    description: 'Path list to the workspaces package.json (must be comma separated "./service, ./client")'
+    required: true
+  output-path:
+    description: 'Path where to create temporary package.json'
+    required: false
+    default: './temp-license-check'
+
+outputs:
+  temp-path:
+    description: 'Path to the created temporary directory of package.json with production dependencies'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
