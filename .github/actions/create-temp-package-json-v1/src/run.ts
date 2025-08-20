@@ -89,9 +89,10 @@ export default async function run(core: Core, fileSystem: FileSystem) {
           `The dependencies (${Object.keys(dependencies).length} items) from the "${workspacePath}" workspace are merged successfully.`
         )
       } catch (error) {
-        core.warning(
+        core.setFailed(
           `Failed to process "${packageJsonPath}": ${(error as Error).message}`
         )
+        return
       }
     }
 

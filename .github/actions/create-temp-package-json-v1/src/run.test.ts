@@ -188,9 +188,9 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(warningSpy.calledOnce)
-      assert.include(warningSpy.firstCall.args[0], 'workspace1/package.json')
-      assert.isTrue(setOutputSpy.calledOnce)
+      assert.isTrue(setFailedSpy.calledOnce)
+      assert.include(setFailedSpy.firstCall.args[0], 'workspace1/package.json')
+      assert.isTrue(setOutputSpy.notCalled)
     })
 
     it('should fail if symlink creation fails', async () => {

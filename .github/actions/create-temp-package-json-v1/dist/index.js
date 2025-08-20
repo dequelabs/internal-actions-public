@@ -25721,7 +25721,7 @@ async function run(core, fileSystem) {
         core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`);
         mkdirSync(outputPath, { recursive: true });
         let mergedDependencies = {};
-        let dependenciesByWorkspaces = {};
+        const dependenciesByWorkspaces = {};
         for (const workspacePath of workspacePaths) {
             core.info(`Processing the workspace: ${workspacePath}...`);
             const packageJsonPath = (0, path_1.join)(workspacePath, 'package.json');
@@ -25741,11 +25741,13 @@ async function run(core, fileSystem) {
                     ...mergedDependencies,
                     ...dependencies
                 };
-                dependenciesByWorkspaces[packageData.name || workspacePath] = dependencies || {};
+                dependenciesByWorkspaces[packageData.name || workspacePath] =
+                    dependencies || {};
                 core.info(`The dependencies (${Object.keys(dependencies).length} items) from the "${workspacePath}" workspace are merged successfully.`);
             }
             catch (error) {
-                core.warning(`Failed to process "${packageJsonPath}": ${error.message}`);
+                core.setFailed(`Failed to process "${packageJsonPath}": ${error.message}`);
+                return;
             }
         }
         core.info(`Total merged dependencies: \n${JSON.stringify(mergedDependencies)}`);
