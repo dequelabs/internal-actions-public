@@ -29,9 +29,6 @@ runs:
   steps:
     - name: Checkout repository
       uses: actions/checkout@v5
-      with:
-        # Fetch all history
-        fetch-depth: 0
 
     # Checking DesignSignoff related labels if a ticket does NOT have any of the following labels
     - name: design-signoff-conditions
