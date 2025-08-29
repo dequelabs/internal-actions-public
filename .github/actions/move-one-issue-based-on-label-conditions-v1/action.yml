@@ -1,0 +1,187 @@
+name: move-one-issue-based-on-label-conditions-v1
+description: This is a composite action that checks multiple label conditions and moves the issue to the appropriate column in the project board
+
+inputs:
+  gh-token:
+    description: 'A GitHub token with the required permissions'
+    required: true
+  issue-number:
+    description: 'The issue number to check and move if it matches any'
+    required: true
+  issue-organization:
+    description: 'The issue organization name'
+    required: true
+  issue-repo:
+    description: 'The issue repository name'
+    required: true
+  issue-url:
+    description: 'The issue URL to move it to another column'
+    required: true
+  project-number:
+    description: 'The project number of the project board'
+    required: true
+  team-label:
+    description: 'The team label name to work only with the team-related issues'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+      with:
+        # Fetch all history
+        fetch-depth: 0
+
+    # Checking DesignSignoff related labels if a ticket does NOT have any of the following labels
+    - name: design-signoff-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      id: design-signoff-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-exclude: 'DesignSignoff: after merge, DesignSignoff: hold for epic, DesignSignoff: none'
+        need-exclude-from-each-label-prefix: true
+        target-column: ManualGHA
+
+    # Checking QA related labels if a ticket does NOT have any of the following labels
+    - name: qa-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.design-signoff-conditions.outputs.is-issue-moved == 'false'
+      id: qa-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-exclude: 'QA: required, QA: hold for epic, QA: none'
+        need-exclude-from-each-label-prefix: true
+        target-column: ManualGHA
+
+    # Checking Docs related labels if a ticket does NOT have any of the following labels
+    - name: docs-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.qa-conditions.outputs.is-issue-moved == 'false'
+      id: docs-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-exclude: 'Docs: required, Docs: hold for epic, Docs: none'
+        need-exclude-from-each-label-prefix: true
+        target-column: ManualGHA
+
+    # Checking if a ticket has the label "DesignSignoff: hold for epic" and does NOT have the label "DesignSignoff: passed"
+    - name: design-signoff-hold-for-epic-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.docs-conditions.outputs.is-issue-moved == 'false'
+      id: design-signoff-hold-for-epic-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'DesignSignoff: hold for epic'
+        label-prefixes-to-exclude: 'DesignSignoff: passed'
+        target-column: DesignSignoffHoldForEpic
+
+    # Checking if a ticket has the label "DesignSignoff: after merge" and does NOT have the label "DesignSignoff: passed"
+    - name: design-required-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.design-signoff-hold-for-epic-conditions.outputs.is-issue-moved == 'false'
+      id: design-required-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'DesignSignoff: after merge'
+        label-prefixes-to-exclude: 'DesignSignoff: passed'
+        target-column: DesignSignoffToDo
+
+    # Checking if a ticket has the label "QA: hold for epic" and does NOT have the label "QA: passed"
+    - name: qa-hold-for-epic-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.design-required-conditions.outputs.is-issue-moved == 'false'
+      id: qa-hold-for-epic-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'QA: hold for epic'
+        label-prefixes-to-exclude: 'QA: passed'
+        target-column: QAHoldForEpic
+
+    # Checking if a ticket has the label "QA: required" and does NOT have the label "QA: passed"
+    - name: qa-required-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.qa-hold-for-epic-conditions.outputs.is-issue-moved == 'false'
+      id: qa-required-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'QA: required'
+        label-prefixes-to-exclude: 'QA: passed'
+        target-column: QAToDo
+
+    # Checking if a ticket has the label "Docs: hold for epic" and does NOT have the label "Docs: done"
+    - name: docs-hold-for-epic-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.qa-required-conditions.outputs.is-issue-moved == 'false'
+      id: docs-hold-for-epic-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'Docs: hold for epic'
+        label-prefixes-to-exclude: 'Docs: done'
+        target-column: DocsHoldForEpic
+
+    # Checking if a ticket has the label "Docs: required" and does NOT have the label "Docs: done"
+    - name: docs-required-conditions
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      if: steps.docs-hold-for-epic-conditions.outputs.is-issue-moved == 'false'
+      id: docs-required-conditions
+      with:
+        token: ${{ inputs.gh-token }}
+        project-number: ${{ inputs.project-number }}
+        issue-number: ${{ inputs.issue-number }}
+        issue-organization: ${{ inputs.issue-organization }}
+        issue-repo: ${{ inputs.issue-repo }}
+        team-label: ${{ inputs.team-label }}
+        label-prefixes-to-match: 'Docs: required'
+        label-prefixes-to-exclude: 'Docs: done'
+        target-column: DocsToDo
+
+    # The ticket's labels are correct, so it can be moved to the "ToRelease" column
+    - name: Move issue to the ToRelease column
+      uses: dequelabs/axe-api-team-public/.github/actions/add-to-board-v1@main
+      if: steps.docs-required-conditions.outputs.is-issue-moved == 'false'
+      with:
+        project-number: ${{ inputs.project-number }}
+        issue-urls: ${{ inputs.issue-url }}
+        column-name: ToRelease
+
