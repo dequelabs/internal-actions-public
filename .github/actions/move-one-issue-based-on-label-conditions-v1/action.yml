@@ -32,7 +32,7 @@ runs:
 
     # Checking DesignSignoff related labels if a ticket does NOT have any of the following labels
     - name: design-signoff-conditions
-      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@main
+      uses: dequelabs/axe-api-team-public/.github/actions/check-and-move-issue-based-on-labels-v1@test/check-issue-is-closed-or-labeled
       id: design-signoff-conditions
       with:
         token: ${{ inputs.gh-token }}
