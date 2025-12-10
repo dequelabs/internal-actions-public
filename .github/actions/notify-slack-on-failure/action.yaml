@@ -25,6 +25,7 @@ runs:
         SLACK_WEBHOOK: ${{ inputs.slack_webhook_url }}
         SLACK_TITLE: ${{ inputs.title }}
         SLACK_MESSAGE: '${{ inputs.slack_message }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-        SLACK_COLOR: ${{ job.status }}
+        # https://github.com/rtCamp/action-slack-notify?tab=readme-ov-file#environment-variables
+        SLACK_COLOR: failure
         SLACK_CHANNEL: ${{ inputs.slack_channel }}
         MSG_MINIMAL: true
