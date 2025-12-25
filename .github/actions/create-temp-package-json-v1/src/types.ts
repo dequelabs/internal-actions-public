@@ -5,7 +5,8 @@ import {
   mkdirSync,
   existsSync,
   symlinkSync,
-  lstatSync
+  lstatSync,
+  rmSync
 } from 'fs'
 
 export type Core = Pick<
@@ -20,4 +21,5 @@ export interface FileSystem {
   existsSync: typeof existsSync
   symlinkSync: typeof symlinkSync
   lstatSync: typeof lstatSync
+  rmSync: typeof rmSync
 }
