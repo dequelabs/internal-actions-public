@@ -14,7 +14,7 @@ inputs:
   only-allow:
     description: A semicolon-separated list of allowed licenses
     # Based on https://github.com/dequelabs/product-org/blob/main/policies/free-and-open-source-acceptable-use-policy.md
-    default: "AFL-2.1;AFL-3.0;AMPAS;Apache-2.0;Artistic-1.0;Artistic-2.0;Apache-1.1;Beerware;BSL-1.0;BSD-2-Clause;BSD-3-Clause;BSD-2-Clause-Patent;CC-BY-1.0;CC-BY-2.0;CC-BY-2.5;CC-BY-3.0;CC-BY-4.0;JSON;FTL;HPND;ImageMagick;ISC;libtiff;LPL-1.02;MS-PL;MIT;MIT-CMU;NCSA;NIST-Software;OpenSSL;PHP-3.0;PostgreSQL;TCP-wrappers;UPL-1.0;W3C-20150513;WTFPL;Xnet;Zend-2.0;Zlib;ZPL-2.0;0BSD;CC0-1.0;Unlicense;Python-2.0;OFL-1.1;BlueOak-1.0.0"
+    default: "AFL-2.1;AFL-3.0;AMPAS;Apache-2.0;Artistic-1.0;Artistic-2.0;Apache-1.1;Beerware;BSL-1.0;BSD-2-Clause;BSD-3-Clause;BSD-2-Clause-Patent;CC-BY-1.0;CC-BY-2.0;CC-BY-2.5;CC-BY-3.0;CC-BY-4.0;JSON;FTL;HPND;ImageMagick;ISC;libtiff;LPL-1.02;MS-PL;MIT;MIT-CMU;NCSA;NIST-Software;OpenSSL;PHP-3.0;PostgreSQL;TCP-wrappers;UPL-1.0;W3C-20150513;WTFPL;Xnet;Zend-2.0;Zlib;ZPL-2.0;0BSD;CC0-1.0;Unlicense;Python-2.0;OFL-1.1;BlueOak-1.0.0;PSF"
   details-output-path:
     description: The path to output details (e.g. ./licenseData.json).
   details-output-format:
