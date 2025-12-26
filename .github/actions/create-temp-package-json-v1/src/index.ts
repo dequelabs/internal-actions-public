@@ -6,7 +6,8 @@ import {
   mkdirSync,
   existsSync,
   symlinkSync,
-  lstatSync
+  lstatSync,
+  rmSync
 } from 'fs'
 import run from './run'
 
@@ -18,5 +19,6 @@ run(core, {
   writeFileSync,
   mkdirSync,
   symlinkSync,
-  lstatSync
+  lstatSync,
+  rmSync
 })

@@ -23,7 +23,8 @@ export default async function run(core: Core, fileSystem: FileSystem) {
       writeFileSync,
       mkdirSync,
       symlinkSync,
-      lstatSync
+      lstatSync,
+      rmSync
     } = fileSystem
 
     if (!existsSync('./node_modules')) {
@@ -122,6 +123,14 @@ export default async function run(core: Core, fileSystem: FileSystem) {
 
     // Create symlink to node_modules
     const nodeModulesSymlinkPath = join(outputPath, 'node_modules')
+
+    // Remove existing symlink if it exists to avoid EEXIST error
+    if (existsSync(nodeModulesSymlinkPath)) {
+      core.info(
+        `Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`
+      )
+      rmSync(nodeModulesSymlinkPath, { recursive: true, force: true })
+    }
 
     symlinkSync(resolve('./node_modules'), nodeModulesSymlinkPath, 'dir')
 

@@ -20,6 +20,7 @@ describe('run', () => {
   let mkdirSyncSpy: sinon.SinonSpy
   let symlinkSyncSpy: sinon.SinonSpy
   let lstatSyncStub: sinon.SinonStub
+  let rmSyncSpy: sinon.SinonSpy
 
   beforeEach(() => {
     getInputStub = sinon.stub()
@@ -42,6 +43,7 @@ describe('run', () => {
     mkdirSyncSpy = sinon.spy()
     symlinkSyncSpy = sinon.spy()
     lstatSyncStub = sinon.stub()
+    rmSyncSpy = sinon.spy()
 
     fileSystem = {
       existsSync: existsSyncStub,
@@ -49,7 +51,8 @@ describe('run', () => {
       writeFileSync: writeFileSyncSpy,
       mkdirSync: mkdirSyncSpy,
       symlinkSync: symlinkSyncSpy,
-      lstatSync: lstatSyncStub
+      lstatSync: lstatSyncStub,
+      rmSync: rmSyncSpy
     }
   })
 
@@ -107,6 +110,41 @@ describe('run', () => {
         express: '^4.18.0' // Comes from the second workspace
       })
 
+      assert.isTrue(symlinkSyncSpy.calledOnce)
+      assert.isTrue(setOutputSpy.calledOnceWithExactly('temp-path', './output'))
+      assert.isTrue(setFailedSpy.notCalled)
+    })
+
+    it('should remove existing symlink before creating new one', async () => {
+      getInputStub
+        .withArgs('workspace-path-list', { required: true })
+        .returns('workspace1')
+      getInputStub.withArgs('output-path').returns('./output')
+
+      existsSyncStub.withArgs('./node_modules').returns(true)
+      existsSyncStub.withArgs('workspace1/package.json').returns(true)
+      existsSyncStub.withArgs('output/node_modules').returns(true) // Symlink already exists
+
+      readFileSyncStub.withArgs('workspace1/package.json', 'utf8').returns(
+        JSON.stringify({
+          dependencies: {
+            lodash: '^4.17.21'
+          }
+        })
+      )
+
+      lstatSyncStub.returns({
+        isSymbolicLink: () => true
+      })
+
+      await run(core, fileSystem)
+
+      assert.isTrue(
+        rmSyncSpy.calledOnceWithExactly('output/node_modules', {
+          recursive: true,
+          force: true
+        })
+      )
       assert.isTrue(symlinkSyncSpy.calledOnce)
       assert.isTrue(setOutputSpy.calledOnceWithExactly('temp-path', './output'))
       assert.isTrue(setFailedSpy.notCalled)

@@ -25684,7 +25684,8 @@ const run_1 = __importDefault(__nccwpck_require__(4130));
     writeFileSync: fs_1.writeFileSync,
     mkdirSync: fs_1.mkdirSync,
     symlinkSync: fs_1.symlinkSync,
-    lstatSync: fs_1.lstatSync
+    lstatSync: fs_1.lstatSync,
+    rmSync: fs_1.rmSync
 });
 
 
@@ -25705,7 +25706,7 @@ async function run(core, fileSystem) {
             required: true
         });
         const outputPath = (core.getInput('output-path') || `./${defaultTempPackageName}`).trim();
-        const { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, lstatSync } = fileSystem;
+        const { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, lstatSync, rmSync } = fileSystem;
         if (!existsSync('./node_modules')) {
             core.setFailed('The `node_modules` directory not found in the root directory. Please install all dependencies before this action.');
             return;
@@ -25764,6 +25765,10 @@ async function run(core, fileSystem) {
         writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2));
         core.info(`Temporary package.json created successfully`);
         const nodeModulesSymlinkPath = (0, path_1.join)(outputPath, 'node_modules');
+        if (existsSync(nodeModulesSymlinkPath)) {
+            core.info(`Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`);
+            rmSync(nodeModulesSymlinkPath, { recursive: true, force: true });
+        }
         symlinkSync((0, path_1.resolve)('./node_modules'), nodeModulesSymlinkPath, 'dir');
         if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
             core.setFailed(`Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`);
