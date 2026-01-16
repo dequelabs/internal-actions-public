@@ -86,7 +86,7 @@ jobs:
           commit_message: ':robot: Update "credits" file'
           # we don't need to run pre-commit hook because we run lint-staged in the step "name: Formatting credits files"
           commit_options: '--no-verify'
-          file_pattern: './app/src/credits.json'
+          file_pattern: './app/credits.json'
 ```
 
 ## Example usage if a repo uses [workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces)
@@ -169,7 +169,7 @@ jobs:
         with:
           branch: ${{ github.ref_name }}
           commit_message: ':robot: Update "credits" file'
-          # we don't need to run pre-commit hook because we run lint-staged in the step "name: Formating credits files"
+          # we don't need to run pre-commit hook because we run lint-staged in the step "name: Formatting credits files"
           commit_options: '--no-verify'
           file_pattern: '**/credits.json'
 ```
