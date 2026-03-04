@@ -256,6 +256,60 @@ describe('checkLicenses', () => {
     })
   })
 
+  it('should handle packages with SPDX OR expressions in licenses', async () => {
+    const mockPackages: ModuleInfos = {
+      'package-1': { licenses: '(MIT OR Apache-2.0)' },
+      'package-2': { licenses: 'MIT' }
+    }
+
+    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
+      // @ts-expect-error - The first argument can be an error or null
+      callback(null, mockPackages)
+    })
+
+    const result = await checkLicenses(licenseChecker, options, core)
+
+    assert.deepEqual(result, mockPackages)
+    assert.strictEqual(result['package-1'].licenses, '(MIT OR Apache-2.0)')
+  })
+
+  it('should handle packages with SPDX AND expressions in licenses', async () => {
+    const mockPackages: ModuleInfos = {
+      'package-1': { licenses: '(MIT AND BSD-3-Clause)' }
+    }
+
+    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
+      // @ts-expect-error - The first argument can be an error or null
+      callback(null, mockPackages)
+    })
+
+    const result = await checkLicenses(licenseChecker, options, core)
+
+    assert.deepEqual(result, mockPackages)
+    assert.strictEqual(result['package-1'].licenses, '(MIT AND BSD-3-Clause)')
+  })
+
+  it('should handle SPDX license expressions in onlyAllow', async () => {
+    const mockPackages: ModuleInfos = {
+      'package-1': { licenses: '(MIT OR Apache-2.0)' },
+      'package-2': { licenses: 'ISC' }
+    }
+
+    licenseChecker.init.callsFake((opts: unknown, callback: InitCallback) => {
+      // @ts-expect-error - The first argument can be an error or null
+      callback(null, mockPackages)
+    })
+
+    options.onlyAllow = 'MIT;Apache-2.0;ISC'
+
+    const result = await checkLicenses(licenseChecker, options, core)
+
+    assert.deepEqual(result, mockPackages)
+    assert.include(licenseChecker.init.firstCall.args[0], {
+      onlyAllow: 'MIT;Apache-2.0;ISC'
+    })
+  })
+
   it('should correctly include empty licenses', async () => {
     const mockPackagesWithEmptyLicense: ModuleInfos = {
       'package-1': { licenses: 'MIT' },
