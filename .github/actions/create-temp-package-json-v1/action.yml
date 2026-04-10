@@ -15,5 +15,5 @@ outputs:
     description: 'Path to the created temporary directory of package.json with production dependencies'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
