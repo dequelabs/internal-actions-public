@@ -1,8 +1,6 @@
 import type {
   CheckLicensesOptions,
   Core,
-  DependencyType,
-  DetailsOutputFormat,
   LicenseChecker,
   ModuleInfos
 } from './types.ts'
