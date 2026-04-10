@@ -26,5 +26,5 @@ inputs:
     description: 'A comma-separated list of package name prefixes to exclude (e.g "@deque/")'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
