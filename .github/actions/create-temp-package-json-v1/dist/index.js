@@ -27588,7 +27588,6 @@ async function run(core, fileSystem) {
             return;
         }
         core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`);
-        // Create output directory
         mkdirSync(outputPath, { recursive: true });
         let mergedDependencies = {};
         const dependenciesByWorkspaces = {};
@@ -27625,7 +27624,6 @@ async function run(core, fileSystem) {
             core.setFailed('No production dependencies found in any workspace');
             return;
         }
-        // Create temporary package.json with the production dependencies
         const tempPackageJson = {
             name: defaultTempPackageName,
             dependencies: mergedDependencies
@@ -27634,15 +27632,12 @@ async function run(core, fileSystem) {
         core.info(`Creating temporary "${tempPackageJsonPath}" file with the production dependencies...`);
         writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2));
         core.info(`Temporary package.json created successfully`);
-        // Create symlink to node_modules
         const nodeModulesSymlinkPath = (0,external_path_.join)(outputPath, 'node_modules');
-        // Remove existing symlink if it exists to avoid EEXIST error
         if (existsSync(nodeModulesSymlinkPath)) {
             core.info(`Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`);
             rmSync(nodeModulesSymlinkPath, { recursive: true, force: true });
         }
         symlinkSync((0,external_path_.resolve)('./node_modules'), nodeModulesSymlinkPath, 'dir');
-        // Verify symlink was created
         if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
             core.setFailed(`Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`);
             return;
@@ -27659,11 +27654,8 @@ async function run(core, fileSystem) {
 
 ;// CONCATENATED MODULE: ./src/index.ts
 
-// We don't have to use streams because "package.json" files are less than 64 Kb
 
 
-// The FS functions (like readFileSync, writeFileSync, etc.) are used as arguments to stub them in unit-tests
-// In the FS library functions are non-configurable and non-writable
 run(core, {
     existsSync: external_fs_.existsSync,
     readFileSync: external_fs_.readFileSync,

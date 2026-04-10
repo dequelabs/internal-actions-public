@@ -51939,7 +51939,6 @@ async function checkLicenses(licenseChecker, options, core) {
     const licenseCheckerOptions = {
         json: detailsOutputFormat === 'json',
         csv: detailsOutputFormat === 'csv',
-        // @ts-expect-error The markdown option is not typed in license-checker-rseidelsohn
         markdown: detailsOutputFormat === 'markdown',
         plainVertical: detailsOutputFormat === 'plainVertical',
         start: startPath,

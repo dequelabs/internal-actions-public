@@ -16,6 +16,7 @@
     "strict": true,
     "noImplicitAny": true,
     "resolveJsonModule": true,
+    "removeComments": true,
     "types": ["mocha", "node"]
   }
 }
