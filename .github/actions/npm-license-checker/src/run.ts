@@ -1,13 +1,21 @@
 import fs from 'fs'
 import path from 'path'
-import checkLicenses from './checkLicenses'
-import {
+import checkLicenses from './checkLicenses.ts'
+import type {
   DependencyType,
   RunOptions,
   DetailsOutputFormat,
   CustomFields,
   CheckLicensesOptions
-} from './types'
+} from './types.ts'
+
+const DEPENDENCY_TYPES: DependencyType[] = ['production', 'development', 'all']
+const DETAILS_OUTPUT_FORMATS: DetailsOutputFormat[] = [
+  'json',
+  'csv',
+  'markdown',
+  'plainVertical'
+]
 
 export default async function run({ core, licenseChecker }: RunOptions) {
   try {
@@ -25,20 +33,16 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       'exclude-packages-starting-with'
     )
 
-    if (!Object.values(DependencyType).includes(dependencyType)) {
+    if (!DEPENDENCY_TYPES.includes(dependencyType)) {
       core.setFailed(
-        `Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(
-          DependencyType
-        ).join(', ')}`
+        `Invalid dependency-type: ${dependencyType}. Allowed values are: ${DEPENDENCY_TYPES.join(', ')}`
       )
       return
     }
 
-    if (!Object.values(DetailsOutputFormat).includes(detailsOutputFormat)) {
+    if (!DETAILS_OUTPUT_FORMATS.includes(detailsOutputFormat)) {
       core.setFailed(
-        `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${Object.values(
-          DetailsOutputFormat
-        ).join(', ')}`
+        `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${DETAILS_OUTPUT_FORMATS.join(', ')}`
       )
       return
     }

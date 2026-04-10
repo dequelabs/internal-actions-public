@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "lib": ["dom", "es2020"],
-    "declaration": true,
-    "outDir": "dist",
+    "target": "es2024",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["es2024"],
+    "noEmit": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
     "noImplicitReturns": true,
     "esModuleInterop": true,
     "noFallthroughCasesInSwitch": true,
@@ -12,10 +14,8 @@
     "forceConsistentCasingInFileNames": true,
     "pretty": true,
     "strict": true,
-    "sourceMap": true,
     "noImplicitAny": true,
     "resolveJsonModule": true,
-    "removeComments": true
-  },
-  "exclude": ["**/*.test.ts", "**/test/**/*.ts"]
+    "types": ["mocha", "node"]
+  }
 }

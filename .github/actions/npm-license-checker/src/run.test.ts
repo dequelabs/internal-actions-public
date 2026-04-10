@@ -1,16 +1,13 @@
-import 'mocha'
 import { assert } from 'chai'
 import sinon from 'sinon'
 import fs from 'fs'
 import path from 'path'
-import run from './run'
-import {
+import run from './run.ts'
+import type {
   Core,
-  DependencyType,
-  DetailsOutputFormat,
   LicenseChecker,
   ModuleInfos
-} from './types'
+} from './types.ts'
 import type { InitOpts } from 'license-checker-rseidelsohn'
 
 describe('run', () => {
@@ -49,7 +46,7 @@ describe('run', () => {
     readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('{}')
 
     // Default input values
-    core.getInput.withArgs('dependency-type').returns(DependencyType.Production)
+    core.getInput.withArgs('dependency-type').returns('production')
     core.getInput.withArgs('start-path').returns('./package.json')
     core.getInput.withArgs('custom-fields-path').returns('')
     core.getInput.withArgs('clarifications-path').returns('')
@@ -59,7 +56,7 @@ describe('run', () => {
     core.getInput.withArgs('exclude-packages-starting-with').returns('')
     core.getInput
       .withArgs('details-output-format')
-      .returns(DetailsOutputFormat.JSON)
+      .returns('json')
   })
 
   afterEach(() => {

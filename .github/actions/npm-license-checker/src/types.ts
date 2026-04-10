@@ -1,5 +1,5 @@
 import type core from '@actions/core'
-import type licenseChecker from 'license-checker-rseidelsohn'
+import type * as licenseChecker from 'license-checker-rseidelsohn'
 
 export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type ModuleInfos = licenseChecker.ModuleInfos
@@ -7,18 +7,9 @@ export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
   asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
 }
 
-export enum DependencyType {
-  Production = 'production',
-  Development = 'development',
-  All = 'all'
-}
+export type DependencyType = 'production' | 'development' | 'all'
 
-export enum DetailsOutputFormat {
-  JSON = 'json',
-  CSV = 'csv',
-  Markdown = 'markdown',
-  PlainVertical = 'plainVertical'
-}
+export type DetailsOutputFormat = 'json' | 'csv' | 'markdown' | 'plainVertical'
 
 // This matches the type of the customFormat option in license-checker-rseidelsohn
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

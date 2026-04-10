@@ -1,8 +1,7 @@
 import { assert } from 'chai'
 import sinon from 'sinon'
-import * as core from '@actions/core'
-import * as github from '@actions/github'
-import { run } from './'
+import { run } from './index.ts'
+import type { Core, GitHub } from './index.ts'
 
 // Define an interface for the raw issue structure used in tests
 interface RawTestIssue {
@@ -16,16 +15,6 @@ interface RawTestIssue {
     | undefined
   >
 }
-
-// Mocks for @actions/core
-let mockCoreGetInput: sinon.SinonStub
-let mockCoreInfo: sinon.SinonSpy
-let mockCoreSetFailed: sinon.SinonSpy
-
-// Mocks for @actions/github
-let mockOctokitPaginate: sinon.SinonStub
-let mockOctokitRemoveLabel: sinon.SinonStub
-let mockOctokitAddLabels: sinon.SinonStub
 
 const MOCK_TOKEN = 'test-github-token'
 const MOCK_OWNER = 'test-owner'
@@ -44,10 +33,20 @@ const getPastDateISO = (options: { weeks?: number; days?: number }): string => {
   return pastDate.toISOString()
 }
 
+// Mocks for @actions/core
+let mockCoreGetInput: sinon.SinonStub
+let mockCoreInfo: sinon.SinonStub
+let mockCoreSetFailed: sinon.SinonStub
+
+// Mocks for octokit (via @actions/github)
+let mockOctokitPaginate: sinon.SinonStub
+let mockOctokitRemoveLabel: sinon.SinonStub
+let mockOctokitAddLabels: sinon.SinonStub
+
 // Helper function to set up mockOctokitPaginate.callsFake
 const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
   mockOctokitPaginate.callsFake(
-    async (_octokitMethod, _octokitParams, transform) => {
+    async (_octokitMethod: unknown, _octokitParams: unknown, transform: (response: { data: RawTestIssue[] }) => unknown) => {
       const mockApiResponse = { data: rawIssues }
       return transform(mockApiResponse)
     }
@@ -56,28 +55,43 @@ const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
 
 describe('run (SLA Breach Labels Action)', () => {
   let clock: sinon.SinonFakeTimers
+  let mockCore: Core
+  let mockGitHub: GitHub
 
   beforeEach(() => {
-    mockCoreGetInput = sinon.stub(core, 'getInput').returns(MOCK_TOKEN)
-    mockCoreInfo = sinon.spy(core, 'info')
-    mockCoreSetFailed = sinon.spy(core, 'setFailed')
+    mockCoreGetInput = sinon.stub().returns(MOCK_TOKEN)
+    mockCoreInfo = sinon.stub()
+    mockCoreSetFailed = sinon.stub()
 
-    const octokitInstance = github.getOctokit(MOCK_TOKEN)
-    mockOctokitPaginate = sinon.stub(octokitInstance, 'paginate')
-    mockOctokitRemoveLabel = sinon
-      .stub(octokitInstance.rest.issues, 'removeLabel')
-      .resolves()
-    mockOctokitAddLabels = sinon
-      .stub(octokitInstance.rest.issues, 'addLabels')
-      .resolves()
-    sinon.stub(github, 'getOctokit').returns(octokitInstance)
+    mockCore = {
+      getInput: mockCoreGetInput,
+      info: mockCoreInfo,
+      setFailed: mockCoreSetFailed
+    }
 
-    sinon.stub(github, 'context').value({
-      repo: {
-        owner: MOCK_OWNER,
-        repo: MOCK_REPO
+    mockOctokitPaginate = sinon.stub()
+    mockOctokitRemoveLabel = sinon.stub().resolves()
+    mockOctokitAddLabels = sinon.stub().resolves()
+
+    mockGitHub = {
+      getOctokit: () =>
+        ({
+          paginate: mockOctokitPaginate,
+          rest: {
+            issues: {
+              listForRepo: sinon.stub(),
+              removeLabel: mockOctokitRemoveLabel,
+              addLabels: mockOctokitAddLabels
+            }
+          }
+        }) as unknown as ReturnType<GitHub['getOctokit']>,
+      context: {
+        repo: {
+          owner: MOCK_OWNER,
+          repo: MOCK_REPO
+        }
       }
-    })
+    } as unknown as GitHub
 
     // Mock Date to control time-based calculations (weeksOld)
     // Current date set to a Monday for easier week calculations if needed
@@ -93,7 +107,7 @@ describe('run (SLA Breach Labels Action)', () => {
   it('should log "No issues found" and return if no issues are fetched', async () => {
     setupMockOctokitPaginate([])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockCoreGetInput.calledWith('token', { required: true }))
     assert.isTrue(mockOctokitPaginate.calledOnce)
@@ -118,7 +132,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueWithoutImpactRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(
       mockCoreInfo.calledWith(
@@ -144,7 +158,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueToBreachRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(
       mockOctokitRemoveLabel.calledOnceWith(
@@ -180,7 +194,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueForP1Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -205,7 +219,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueForP2Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -230,7 +244,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueForP3Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -255,7 +269,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([newIssueRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isFalse(mockOctokitAddLabels.called)
@@ -276,7 +290,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueWithCorrectLabelRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isFalse(mockOctokitAddLabels.called)
@@ -297,7 +311,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueWithObsoleteLabelRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(
       mockOctokitRemoveLabel.calledOnceWith(sinon.match({ name: 'SLA P3' }))
@@ -323,7 +337,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const removeError = new Error('API_REMOVE_ERROR')
     mockOctokitRemoveLabel.rejects(removeError)
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockOctokitRemoveLabel.calledOnce)
     assert.isTrue(mockCoreSetFailed.calledOnce)
@@ -346,7 +360,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const addError = new Error('API_ADD_ERROR')
     mockOctokitAddLabels.rejects(addError)
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockOctokitAddLabels.calledOnce)
     assert.isTrue(mockCoreSetFailed.calledOnce)
@@ -365,7 +379,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([criticalIssueForP1Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -396,7 +410,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([issueWithMultipleOldSLAsRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockOctokitRemoveLabel.calledTwice)
     assert.isTrue(
@@ -421,7 +435,7 @@ describe('run (SLA Breach Labels Action)', () => {
       throw nonErrorObject
     })
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockCoreSetFailed.calledOnce)
     assert.strictEqual(
@@ -439,7 +453,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([seriousIssueForP1Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -464,7 +478,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([seriousIssueToBreachRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -489,7 +503,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([moderateIssueForP1Raw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -514,7 +528,7 @@ describe('run (SLA Breach Labels Action)', () => {
     }
     setupMockOctokitPaginate([moderateIssueToBreachRaw])
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isFalse(mockOctokitRemoveLabel.called)
     assert.isTrue(
@@ -549,7 +563,7 @@ describe('run (SLA Breach Labels Action)', () => {
     ]
     setupMockOctokitPaginate(issuesWithVariousLabelsRaw)
 
-    await run()
+    await run(mockCore, mockGitHub)
 
     assert.isTrue(mockOctokitPaginate.calledOnce)
     assert.isFalse(mockCoreSetFailed.called)

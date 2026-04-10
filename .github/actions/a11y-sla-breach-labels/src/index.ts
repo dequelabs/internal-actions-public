@@ -1,7 +1,11 @@
-import * as core from '@actions/core'
-import * as github from '@actions/github'
+import * as defaultCore from '@actions/core'
+import * as defaultGitHub from '@actions/github'
 
 type ImpactLevel = 'Blocker' | 'Critical' | 'Serious' | 'Moderate'
+
+export type Core = Pick<typeof defaultCore, 'getInput' | 'info' | 'setFailed'>
+export type GitHub = Pick<typeof defaultGitHub, 'getOctokit' | 'context'>
+
 // Define SLA Thresholds based on impact levels (in weeks)
 const LABEL_THRESHOLDS: Record<ImpactLevel, number> = {
   Blocker: 4,
@@ -68,7 +72,10 @@ function getSLALabel(
  * 6. If any errors occur during the process, catches them, logs an appropriate message, and sets the action to failed.
  * The `run` function is executed when the script is run.
  */
-export async function run(): Promise<void> {
+export async function run(
+  core: Core = defaultCore,
+  github: GitHub = defaultGitHub
+): Promise<void> {
   try {
     const token = core.getInput('token', { required: true })
     const octokit = github.getOctokit(token)

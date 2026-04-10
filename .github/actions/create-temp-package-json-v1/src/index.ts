@@ -9,7 +9,7 @@ import {
   lstatSync,
   rmSync
 } from 'fs'
-import run from './run'
+import run from './run.ts'
 
 // The FS functions (like readFileSync, writeFileSync, etc.) are used as arguments to stub them in unit-tests
 // In the FS library functions are non-configurable and non-writable
