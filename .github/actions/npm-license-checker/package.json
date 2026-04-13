@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "rimraf dist",
     "build": "ncc build src/index.ts --license ../../../licenses.txt",
+    "postbuild": "rimraf dist/npm-license-checker",
     "test": "node --test \"src/**/*.test.ts\"",
     "coverage": "node --test --experimental-test-coverage --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-lines=100 \"src/**/*.test.ts\"",
     "fmt": "prettier --write \"src/**/*.{js,ts,tsx,json,md,css,html}\"",

@@ -2,11 +2,13 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import type { ResolvedNodeModules } from './types.ts'
+import { pkgJsonFilename, nodeModulesDir } from './nccEscape.ts'
 
 export default function resolveNodeModules(
   startPath: string
 ): ResolvedNodeModules {
-  const localNodeModules = path.join(startPath, 'node_modules')
+  // Use plain string concat to avoid ncc's asset-tracing rewrites.
+  const localNodeModules = startPath + path.sep + nodeModulesDir()
   const hasLocalNodeModules = fs.existsSync(localNodeModules)
   const ancestorNodeModules = findAncestorNodeModules(startPath)
 
@@ -27,13 +29,13 @@ export default function resolveNodeModules(
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'license-scan-'))
 
   // Copy package.json
-  const srcPkgJson = path.join(startPath, 'package.json')
+  const srcPkgJson = startPath + path.sep + pkgJsonFilename()
   if (fs.existsSync(srcPkgJson)) {
-    fs.copyFileSync(srcPkgJson, path.join(tempDir, 'package.json'))
+    fs.copyFileSync(srcPkgJson, tempDir + path.sep + pkgJsonFilename())
   }
 
   // Build merged node_modules: ancestor first, then local overrides
-  const tempNodeModules = path.join(tempDir, 'node_modules')
+  const tempNodeModules = tempDir + path.sep + nodeModulesDir()
   fs.mkdirSync(tempNodeModules)
 
   symlinkNodeModulesEntries(ancestorNodeModules!, tempNodeModules)
@@ -55,7 +57,7 @@ function findAncestorNodeModules(startPath: string): string | null {
   const root = path.parse(dir).root
 
   while (dir !== root) {
-    const candidate = path.join(dir, 'node_modules')
+    const candidate = dir + path.sep + nodeModulesDir()
     if (fs.existsSync(candidate)) {
       return candidate
     }

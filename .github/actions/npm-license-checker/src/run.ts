@@ -5,6 +5,7 @@ import checkOnlyAllow from './checkOnlyAllow.ts'
 import formatOutput from './formatOutput.ts'
 import defaultExpandWorkspaces from './expandWorkspaces.ts'
 import defaultResolveNodeModules from './resolveNodeModules.ts'
+import { pkgJsonFilename } from './nccEscape.ts'
 import {
   DEPENDENCY_TYPES,
   DETAILS_OUTPUT_FORMATS,
@@ -115,11 +116,14 @@ export default async function run({
     const inputName =
       startPaths.trim().length > 0 ? 'start-paths' : 'start-path'
     for (const p of userPaths) {
-      if (!fs.existsSync(path.resolve(p))) {
+      const absPath = path.resolve(p)
+      if (!fs.existsSync(absPath)) {
         core.setFailed(`${inputName} "${p}" does not exist`)
         return
       }
-      if (!fs.existsSync(path.resolve(p, 'package.json'))) {
+      // Avoid `path.resolve(p, 'package.json')` — ncc's asset tracer will
+      // rewrite that to a bundled asset path. Plain string concat bypasses it.
+      if (!fs.existsSync(absPath + path.sep + pkgJsonFilename())) {
         core.setFailed(
           `${inputName} "${p}" does not contain a package.json file`
         )

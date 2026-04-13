@@ -2,9 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 import yaml from 'js-yaml'
+import { pkgJsonFilename, pnpmWorkspaceYamlFilename } from './nccEscape.ts'
 
 export default function expandWorkspaces(startPath: string): string[] {
-  const packageJsonPath = path.join(startPath, 'package.json')
+  // Build via string concat to avoid ncc's asset-tracing rewrites of
+  // path.join(x, 'package.json') / path.join(x, 'pnpm-workspace.yaml').
+  const packageJsonPath = startPath + path.sep + pkgJsonFilename()
 
   let patterns: string[] = []
 
@@ -25,7 +28,7 @@ export default function expandWorkspaces(startPath: string): string[] {
 
   // Check for pnpm-workspace.yaml if no workspaces found in package.json
   if (!patterns.length) {
-    const pnpmWorkspacePath = path.join(startPath, 'pnpm-workspace.yaml')
+    const pnpmWorkspacePath = startPath + path.sep + pnpmWorkspaceYamlFilename()
     if (fs.existsSync(pnpmWorkspacePath)) {
       const content = fs.readFileSync(pnpmWorkspacePath, 'utf8')
       const parsed = yaml.load(content) as { packages?: string[] } | null
@@ -46,7 +49,7 @@ export default function expandWorkspaces(startPath: string): string[] {
       const fullPath = path.resolve(startPath, match)
       if (
         fs.statSync(fullPath).isDirectory() &&
-        fs.existsSync(path.join(fullPath, 'package.json'))
+        fs.existsSync(fullPath + path.sep + pkgJsonFilename())
       ) {
         workspacePaths.push(fullPath)
       }

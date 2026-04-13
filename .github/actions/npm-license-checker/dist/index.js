@@ -63557,13 +63557,31 @@ var jsYaml = {
 /* harmony default export */ const js_yaml = (jsYaml);
 
 
+;// CONCATENATED MODULE: ./src/nccEscape.ts
+const ENCODED = Buffer.from([
+    0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x00,
+    0x70, 0x6e, 0x70, 0x6d, 0x2d, 0x77, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63,
+    0x65, 0x2e, 0x79, 0x61, 0x6d, 0x6c, 0x00, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x6d,
+    0x6f, 0x64, 0x75, 0x6c, 0x65, 0x73
+]).toString('utf8').split('\0');
+function pkgJsonFilename() {
+    return ENCODED[0];
+}
+function pnpmWorkspaceYamlFilename() {
+    return ENCODED[1];
+}
+function nodeModulesDir() {
+    return ENCODED[2];
+}
+
 ;// CONCATENATED MODULE: ./src/expandWorkspaces.ts
 
 
 
 
+
 function expandWorkspaces_expandWorkspaces(startPath) {
-    const packageJsonPath = external_path_default().join(startPath, 'package.json');
+    const packageJsonPath = startPath + (external_path_default()).sep + pkgJsonFilename();
     let patterns = [];
     if (external_fs_default().existsSync(packageJsonPath)) {
         try {
@@ -63580,7 +63598,7 @@ function expandWorkspaces_expandWorkspaces(startPath) {
         }
     }
     if (!patterns.length) {
-        const pnpmWorkspacePath = external_path_default().join(startPath, 'pnpm-workspace.yaml');
+        const pnpmWorkspacePath = startPath + (external_path_default()).sep + pnpmWorkspaceYamlFilename();
         if (external_fs_default().existsSync(pnpmWorkspacePath)) {
             const content = external_fs_default().readFileSync(pnpmWorkspacePath, 'utf8');
             const parsed = js_yaml.load(content);
@@ -63598,7 +63616,7 @@ function expandWorkspaces_expandWorkspaces(startPath) {
         for (const match of matches) {
             const fullPath = external_path_default().resolve(startPath, match);
             if (external_fs_default().statSync(fullPath).isDirectory() &&
-                external_fs_default().existsSync(external_path_default().join(fullPath, 'package.json'))) {
+                external_fs_default().existsSync(fullPath + (external_path_default()).sep + pkgJsonFilename())) {
                 workspacePaths.push(fullPath);
             }
         }
@@ -63613,8 +63631,9 @@ var external_os_default = /*#__PURE__*/__nccwpck_require__.n(external_os_);
 
 
 
+
 function resolveNodeModules_resolveNodeModules(startPath) {
-    const localNodeModules = external_path_default().join(startPath, 'node_modules');
+    const localNodeModules = startPath + (external_path_default()).sep + nodeModulesDir();
     const hasLocalNodeModules = external_fs_default().existsSync(localNodeModules);
     const ancestorNodeModules = findAncestorNodeModules(startPath);
     if (!hasLocalNodeModules && !ancestorNodeModules) {
@@ -63624,11 +63643,11 @@ function resolveNodeModules_resolveNodeModules(startPath) {
         return { scanPath: startPath, cleanup: () => { } };
     }
     const tempDir = external_fs_default().mkdtempSync(external_path_default().join(external_os_default().tmpdir(), 'license-scan-'));
-    const srcPkgJson = external_path_default().join(startPath, 'package.json');
+    const srcPkgJson = startPath + (external_path_default()).sep + pkgJsonFilename();
     if (external_fs_default().existsSync(srcPkgJson)) {
-        external_fs_default().copyFileSync(srcPkgJson, external_path_default().join(tempDir, 'package.json'));
+        external_fs_default().copyFileSync(srcPkgJson, tempDir + (external_path_default()).sep + pkgJsonFilename());
     }
-    const tempNodeModules = external_path_default().join(tempDir, 'node_modules');
+    const tempNodeModules = tempDir + (external_path_default()).sep + nodeModulesDir();
     external_fs_default().mkdirSync(tempNodeModules);
     symlinkNodeModulesEntries(ancestorNodeModules, tempNodeModules);
     if (hasLocalNodeModules) {
@@ -63645,7 +63664,7 @@ function findAncestorNodeModules(startPath) {
     let dir = external_path_default().dirname(startPath);
     const root = external_path_default().parse(dir).root;
     while (dir !== root) {
-        const candidate = external_path_default().join(dir, 'node_modules');
+        const candidate = dir + (external_path_default()).sep + nodeModulesDir();
         if (external_fs_default().existsSync(candidate)) {
             return candidate;
         }
@@ -63695,6 +63714,7 @@ const DETAILS_OUTPUT_FORMATS = [
 ];
 
 ;// CONCATENATED MODULE: ./src/run.ts
+
 
 
 
@@ -63765,11 +63785,12 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
         }
         const inputName = startPaths.trim().length > 0 ? 'start-paths' : 'start-path';
         for (const p of userPaths) {
-            if (!external_fs_default().existsSync(external_path_default().resolve(p))) {
+            const absPath = external_path_default().resolve(p);
+            if (!external_fs_default().existsSync(absPath)) {
                 core.setFailed(`${inputName} "${p}" does not exist`);
                 return;
             }
-            if (!external_fs_default().existsSync(__nccwpck_require__.ab + "npm-license-checker/" + p + '/package.json')) {
+            if (!external_fs_default().existsSync(absPath + (external_path_default()).sep + pkgJsonFilename())) {
                 core.setFailed(`${inputName} "${p}" does not contain a package.json file`);
                 return;
             }
