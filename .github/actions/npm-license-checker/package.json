@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "A GitHub action to check 3rd-party licenses",
+  "type": "module",
   "license": "MPL-2.0",
   "engines": {
     "node": ">=24"
@@ -11,29 +12,10 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "rimraf dist",
     "build": "ncc build src/index.ts --license ../../../licenses.txt",
-    "test": "mocha src/*.test.ts",
-    "coverage": "nyc npm run test",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-lines=100 \"src/**/*.test.ts\"",
     "fmt": "prettier --write \"src/**/*.{js,ts,tsx,json,md,css,html}\"",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\""
-  },
-  "nyc": {
-    "checkCoverage": true,
-    "extension": [
-      ".ts"
-    ],
-    "reporter": [
-      "text-summary",
-      "html"
-    ],
-    "statements": 100,
-    "branches": 100,
-    "functions": 100,
-    "lines": 100,
-    "exclude": [
-      "dist",
-      "coverage",
-      "**/*.test.ts"
-    ]
   },
   "devDependencies": {
     "@actions/core": "^1.11.1",

@@ -1,4 +1,5 @@
-import { assert } from 'chai'
+import { describe, it, beforeEach, afterEach } from 'node:test'
+import assert from 'node:assert'
 import sinon from 'sinon'
 import fs from 'fs'
 import path from 'path'
@@ -68,8 +69,10 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(core.setFailed.firstCall.args[0], 'Invalid dependency-type')
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes('Invalid dependency-type')
+    )
   })
 
   it('should fail with invalid details-output-format', async () => {
@@ -77,10 +80,11 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'Invalid details-output-format'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'Invalid details-output-format'
+      )
     )
   })
 
@@ -89,10 +93,11 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'start-path does not exist'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'start-path does not exist'
+      )
     )
   })
 
@@ -104,19 +109,22 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
   })
 
   it('should fail when custom-fields-path does not exist', async () => {
     core.getInput.withArgs('custom-fields-path').returns('./custom-fields.json')
-    existsSyncStub.withArgs(path.resolve('./custom-fields.json')).returns(false)
+    existsSyncStub
+      .withArgs(path.resolve('./custom-fields.json'))
+      .returns(false)
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'custom-fields-path does not exist'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'custom-fields-path does not exist'
+      )
     )
   })
 
@@ -126,10 +134,11 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'Error reading or parsing customFieldsPath'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'Error reading or parsing customFieldsPath'
+      )
     )
   })
 
@@ -143,10 +152,11 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'clarifications-path does not exist'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'clarifications-path does not exist'
+      )
     )
   })
 
@@ -158,8 +168,10 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(core.setFailed.firstCall.args[0], 'License check failed')
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes('License check failed')
+    )
   })
 
   it('should handle clarificationsPath correctly when file exists', async () => {
@@ -170,10 +182,11 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
-    assert.include(
-      JSON.stringify(licenseChecker.init.firstCall.args[0]),
-      clarificationsPath
+    assert.strictEqual(core.setFailed.notCalled, true)
+    assert.ok(
+      JSON.stringify(licenseChecker.init.firstCall.args[0]).includes(
+        clarificationsPath
+      )
     )
   })
 
@@ -183,22 +196,22 @@ describe('run', () => {
     core.getInput.withArgs('exclude-packages').returns(excludePackages)
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.include(JSON.stringify(options), excludePackages)
+    assert.ok(JSON.stringify(options).includes(excludePackages))
   })
 
   it('should skip excludePackages if not provided', async () => {
     core.getInput.withArgs('exclude-packages').returns('')
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.notInclude(JSON.stringify(options), 'excludePackages')
+    assert.ok(!JSON.stringify(options).includes('excludePackages'))
   })
 
   it('should handle excludePackagesStartingWith correctly when provided', async () => {
@@ -209,22 +222,24 @@ describe('run', () => {
       .returns(excludePackagesStartingWith)
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.include(JSON.stringify(options), excludePackagesStartingWith)
+    assert.ok(JSON.stringify(options).includes(excludePackagesStartingWith))
   })
 
   it('should skip excludePackagesStartingWith if not provided', async () => {
     core.getInput.withArgs('exclude-packages-starting-with').returns('')
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.notInclude(JSON.stringify(options), 'excludePackagesStartingWith')
+    assert.ok(
+      !JSON.stringify(options).includes('excludePackagesStartingWith')
+    )
   })
 
   it('should handle onlyAllow parameter correctly', async () => {
@@ -233,11 +248,11 @@ describe('run', () => {
     core.getInput.withArgs('only-allow').returns(onlyAllow)
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.include(JSON.stringify(options), onlyAllow)
+    assert.ok(JSON.stringify(options).includes(onlyAllow))
   })
 
   it('should handle detailsOutputPath parameter correctly', async () => {
@@ -246,11 +261,11 @@ describe('run', () => {
     core.getInput.withArgs('details-output-path').returns(detailsOutputPath)
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.notCalled)
+    assert.strictEqual(core.setFailed.notCalled, true)
 
     const options = licenseChecker.init.firstCall.args[0]
 
-    assert.include(JSON.stringify(options), detailsOutputPath)
+    assert.ok(JSON.stringify(options).includes(detailsOutputPath))
   })
 
   it('should fail when licenseCheckerSummary is empty', async () => {
@@ -258,8 +273,10 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(core.setFailed.firstCall.args[0], 'No licenses found')
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes('No licenses found')
+    )
   })
 
   it('should log info with provided options', async () => {
@@ -271,9 +288,9 @@ describe('run', () => {
     const infoCall = core.info
       .getCalls()
       .find(call => call.args[0].includes('Provided options'))
-    assert.isDefined(infoCall)
-    assert.include(infoCall.args[0], 'MIT')
-    assert.include(infoCall.args[0], './details.json')
+    assert.notStrictEqual(infoCall, undefined)
+    assert.ok(infoCall!.args[0].includes('MIT'))
+    assert.ok(infoCall!.args[0].includes('./details.json'))
   })
 
   it('should log license checker summary when available', async () => {
@@ -285,8 +302,8 @@ describe('run', () => {
     const infoCall = core.info
       .getCalls()
       .find(call => call.args[0].includes(summary))
-    assert.isDefined(infoCall)
-    assert.include(infoCall.args[0], summary)
+    assert.notStrictEqual(infoCall, undefined)
+    assert.ok(infoCall!.args[0].includes(summary))
   })
 
   it('should handle errors during execution', async () => {
@@ -294,11 +311,12 @@ describe('run', () => {
 
     await run({ core, licenseChecker })
 
-    assert.isTrue(core.setFailed.called)
-    assert.include(core.setFailed.firstCall.args[0], 'Error checking licenses')
-    assert.include(
-      core.setFailed.firstCall.args[0],
-      'Unexpected error occurred'
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes('Error checking licenses')
+    )
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes('Unexpected error occurred')
     )
   })
 })
