@@ -1,7 +1,8 @@
-import { assert } from 'chai'
+import { describe, it, beforeEach, afterEach } from 'node:test'
+import assert from 'node:assert'
 import sinon from 'sinon'
-import { run } from './index.ts'
-import type { Core, GitHub } from './index.ts'
+import { run } from './run.ts'
+import type { Core, GitHub } from './run.ts'
 
 // Define an interface for the raw issue structure used in tests
 interface RawTestIssue {
@@ -20,11 +21,11 @@ const MOCK_TOKEN = 'test-github-token'
 const MOCK_OWNER = 'test-owner'
 const MOCK_REPO = 'test-repo'
 
-let now: Date // Declare now in the describe scope
+let now: Date
 
 // Helper function to generate past dates relative to 'now'
 const getPastDateISO = (options: { weeks?: number; days?: number }): string => {
-  const pastDate = new Date(now.getTime()) // 'now' will be set in beforeEach
+  const pastDate = new Date(now.getTime())
   if (options.weeks !== undefined) {
     pastDate.setDate(pastDate.getDate() - options.weeks * 7)
   } else if (options.days !== undefined) {
@@ -46,7 +47,11 @@ let mockOctokitAddLabels: sinon.SinonStub
 // Helper function to set up mockOctokitPaginate.callsFake
 const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
   mockOctokitPaginate.callsFake(
-    async (_octokitMethod: unknown, _octokitParams: unknown, transform: (response: { data: RawTestIssue[] }) => unknown) => {
+    async (
+      _octokitMethod: unknown,
+      _octokitParams: unknown,
+      transform: (response: { data: RawTestIssue[] }) => unknown
+    ) => {
       const mockApiResponse = { data: rawIssues }
       return transform(mockApiResponse)
     }
@@ -94,7 +99,6 @@ describe('run (SLA Breach Labels Action)', () => {
     } as unknown as GitHub
 
     // Mock Date to control time-based calculations (weeksOld)
-    // Current date set to a Monday for easier week calculations if needed
     now = new Date('2024-01-29T12:00:00Z')
     clock = sinon.useFakeTimers(now.getTime())
   })
@@ -109,19 +113,23 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockCoreGetInput.calledWith('token', { required: true }))
-    assert.isTrue(mockOctokitPaginate.calledOnce)
-
-    assert.isTrue(
-      mockCoreInfo.calledWith('🚀 Fetching open issues from GitHub API...')
+    assert.strictEqual(
+      mockCoreGetInput.calledWith('token', { required: true }),
+      true
     )
-    assert.isTrue(mockCoreInfo.calledWith('Total Issues Fetched: 0'))
-    assert.isTrue(
-      mockCoreInfo.calledWith('⚠️ No issues found with the required labels.')
+    assert.strictEqual(mockOctokitPaginate.calledOnce, true)
+    assert.strictEqual(
+      mockCoreInfo.calledWith('🚀 Fetching open issues from GitHub API...'),
+      true
     )
-    assert.isFalse(mockCoreSetFailed.called)
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isFalse(mockOctokitAddLabels.called)
+    assert.strictEqual(mockCoreInfo.calledWith('Total Issues Fetched: 0'), true)
+    assert.strictEqual(
+      mockCoreInfo.calledWith('⚠️ No issues found with the required labels.'),
+      true
+    )
+    assert.strictEqual(mockCoreSetFailed.called, false)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.called, false)
   })
 
   it('should log "no recognized impact level" and skip an issue without an impact label', async () => {
@@ -134,14 +142,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(
+    assert.strictEqual(
       mockCoreInfo.calledWith(
         `⚠️ Issue #${issueWithoutImpactRaw.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
-      )
+      ),
+      true
     )
-    assert.isFalse(mockCoreSetFailed.called)
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isFalse(mockOctokitAddLabels.called)
+    assert.strictEqual(mockCoreSetFailed.called, false)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.called, false)
   })
 
   it('should apply "SLA Breach" if issue is older than Blocker threshold and remove old P-label', async () => {
@@ -160,29 +169,23 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(
-      mockOctokitRemoveLabel.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: issueToBreachRaw.number,
-          name: 'SLA P1'
-        })
-      )
-    )
+    assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitRemoveLabel.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: issueToBreachRaw.number,
+      name: 'SLA P1'
+    })
 
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: issueToBreachRaw.number,
-          labels: ['SLA Breach']
-        })
-      )
-    )
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: issueToBreachRaw.number,
+      labels: ['SLA Breach']
+    })
 
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should apply "SLA P1" if issue is 1 week from Blocker threshold (3 weeks old)', async () => {
@@ -196,18 +199,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: issueForP1Raw.number,
-          labels: ['SLA P1']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: issueForP1Raw.number,
+      labels: ['SLA P1']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should apply "SLA P2" if issue is 2 weeks from Blocker threshold (2 weeks old)', async () => {
@@ -221,18 +221,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: issueForP2Raw.number,
-          labels: ['SLA P2']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: issueForP2Raw.number,
+      labels: ['SLA P2']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should apply "SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
@@ -246,18 +243,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: issueForP3Raw.number,
-          labels: ['SLA P3']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: issueForP3Raw.number,
+      labels: ['SLA P3']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should not apply any SLA label if issue is too new (0 weeks old for Blocker)', async () => {
@@ -271,9 +265,9 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isFalse(mockOctokitAddLabels.called)
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.called, false)
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should not change labels if issue already has the correct SLA label (SLA P1)', async () => {
@@ -292,9 +286,9 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isFalse(mockOctokitAddLabels.called)
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.called, false)
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should remove an old SLA label if no new SLA label is applicable', async () => {
@@ -313,11 +307,10 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(
-      mockOctokitRemoveLabel.calledOnceWith(sinon.match({ name: 'SLA P3' }))
-    )
-    assert.isFalse(mockOctokitAddLabels.called)
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
+    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'SLA P3')
+    assert.strictEqual(mockOctokitAddLabels.called, false)
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should call core.setFailed if removing a label fails', async () => {
@@ -339,13 +332,13 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockOctokitRemoveLabel.calledOnce)
-    assert.isTrue(mockCoreSetFailed.calledOnce)
+    assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
+    assert.strictEqual(mockCoreSetFailed.calledOnce, true)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
       `Could not remove label SLA P1 from issue #${issueToBreachRaw.number}: ${removeError.message}`
     )
-    assert.isFalse(mockOctokitAddLabels.called)
+    assert.strictEqual(mockOctokitAddLabels.called, false)
   })
 
   it('should call core.setFailed if adding a label fails', async () => {
@@ -362,8 +355,8 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockOctokitAddLabels.calledOnce)
-    assert.isTrue(mockCoreSetFailed.calledOnce)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.strictEqual(mockCoreSetFailed.calledOnce, true)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
       `Could not add label SLA P1 to issue #${issueForP1Raw.number}: ${addError.message}`
@@ -381,18 +374,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: criticalIssueForP1Raw.number,
-          labels: ['SLA P1']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: criticalIssueForP1Raw.number,
+      labels: ['SLA P1']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should remove multiple existing SLA labels if needed when applying a new one', async () => {
@@ -412,32 +402,30 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockOctokitRemoveLabel.calledTwice)
-    assert.isTrue(
-      mockOctokitRemoveLabel.calledWith(sinon.match({ name: 'SLA P1' }))
-    )
-    assert.isTrue(
-      mockOctokitRemoveLabel.calledWith(sinon.match({ name: 'SLA P2' }))
-    )
+    assert.strictEqual(mockOctokitRemoveLabel.calledTwice, true)
+    const removedNames = [
+      mockOctokitRemoveLabel.firstCall.args[0].name,
+      mockOctokitRemoveLabel.secondCall.args[0].name
+    ]
+    assert.ok(removedNames.includes('SLA P1'))
+    assert.ok(removedNames.includes('SLA P2'))
 
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({ labels: ['SLA Breach'] })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0].labels, [
+      'SLA Breach'
+    ])
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should call core.setFailed with a generic message for non-Error exceptions', async () => {
     const nonErrorObject = { message: 'not an error instance' }
-    // For this specific test, we want to simulate a non-Error throw directly from paginate setup
     mockOctokitPaginate.callsFake(async () => {
       throw nonErrorObject
     })
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockCoreSetFailed.calledOnce)
+    assert.strictEqual(mockCoreSetFailed.calledOnce, true)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
       `An unknown error occurred: ${String(nonErrorObject)}`
@@ -455,18 +443,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: seriousIssueForP1Raw.number,
-          labels: ['SLA P1']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: seriousIssueForP1Raw.number,
+      labels: ['SLA P1']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should correctly apply "SLA Breach" for a "Serious" issue (20w SLA) at 20 weeks old', async () => {
@@ -480,18 +465,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: seriousIssueToBreachRaw.number,
-          labels: ['SLA Breach']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: seriousIssueToBreachRaw.number,
+      labels: ['SLA Breach']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should correctly apply "SLA P1" for a "Moderate" issue (30w SLA) at 29 weeks old', async () => {
@@ -505,18 +487,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: moderateIssueForP1Raw.number,
-          labels: ['SLA P1']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: moderateIssueForP1Raw.number,
+      labels: ['SLA P1']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should correctly apply "SLA Breach" for a "Moderate" issue (30w SLA) at 30 weeks old', async () => {
@@ -530,18 +509,15 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isFalse(mockOctokitRemoveLabel.called)
-    assert.isTrue(
-      mockOctokitAddLabels.calledOnceWith(
-        sinon.match({
-          owner: MOCK_OWNER,
-          repo: MOCK_REPO,
-          issue_number: moderateIssueToBreachRaw.number,
-          labels: ['SLA Breach']
-        })
-      )
-    )
-    assert.isFalse(mockCoreSetFailed.called)
+    assert.strictEqual(mockOctokitRemoveLabel.called, false)
+    assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
+    assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0], {
+      owner: MOCK_OWNER,
+      repo: MOCK_REPO,
+      issue_number: moderateIssueToBreachRaw.number,
+      labels: ['SLA Breach']
+    })
+    assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
   it('should correctly map various label formats from API response', async () => {
@@ -549,15 +525,14 @@ describe('run (SLA Breach Labels Action)', () => {
       {
         number: 100,
         created_at: new Date().toISOString(),
-        // Provide a mix of label types to cover all branches in the transformation:
         labels: [
-          'string-label', // For: typeof label === 'string'
-          { name: 'name-prop-label' }, // For: typeof label !== 'string' AND label.name is truthy
-          { name: null }, // For: typeof label !== 'string' AND label.name is null (falsy)
-          { id: 12345, description: 'object without name' }, // For: typeof label !== 'string' AND label.name is undefined (falsy)
-          null, // For: typeof label !== 'string' (null type), label?.name is undefined (falsy)
-          undefined, // For: typeof label !== 'string' (undefined type), label?.name is undefined (falsy)
-          { name: '' } // For: typeof label !== 'string' AND label.name is empty string (falsy)
+          'string-label',
+          { name: 'name-prop-label' },
+          { name: null },
+          { id: 12345, description: 'object without name' },
+          null,
+          undefined,
+          { name: '' }
         ]
       }
     ]
@@ -565,12 +540,13 @@ describe('run (SLA Breach Labels Action)', () => {
 
     await run(mockCore, mockGitHub)
 
-    assert.isTrue(mockOctokitPaginate.calledOnce)
-    assert.isFalse(mockCoreSetFailed.called)
-    assert.isTrue(
+    assert.strictEqual(mockOctokitPaginate.calledOnce, true)
+    assert.strictEqual(mockCoreSetFailed.called, false)
+    assert.strictEqual(
       mockCoreInfo.calledWith(
         `⚠️ Issue #${issuesWithVariousLabelsRaw[0].number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
-      )
+      ),
+      true
     )
   })
 })

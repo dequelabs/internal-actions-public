@@ -1,4 +1,3 @@
-import globals from 'globals'
 import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
@@ -7,11 +6,7 @@ export default [
   ...tseslint.configs.recommended,
   {
     languageOptions: {
-      parser: tseslint.parser,
-      globals: {
-        ...globals.node,
-        ...globals.es2015
-      }
+      parser: tseslint.parser
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin
@@ -23,7 +18,7 @@ export default [
       '**/dist/',
       '**/coverage/',
       '**/.nyc_output/',
-      'eslint.config.js'
+      'eslint.config.mjs'
     ]
   }
 ]

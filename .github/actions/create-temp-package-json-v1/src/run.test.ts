@@ -1,5 +1,6 @@
+import { describe, it, beforeEach, afterEach } from 'node:test'
+import assert from 'node:assert'
 import sinon from 'sinon'
-import { assert } from 'chai'
 import run from './run.ts'
 import type { Core, FileSystem } from './types.ts'
 
@@ -55,7 +56,7 @@ describe('run', () => {
     }
   })
 
-  afterEach(sinon.restore)
+  afterEach(() => sinon.restore())
 
   describe('Success scenarios', () => {
     it('should merge dependencies from multiple workspaces', async () => {
@@ -92,26 +93,30 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(
-        mkdirSyncSpy.calledOnceWithExactly('./output', { recursive: true })
+      assert.strictEqual(
+        mkdirSyncSpy.calledOnceWithExactly('./output', { recursive: true }),
+        true
       )
-      assert.isTrue(writeFileSyncSpy.calledOnce)
+      assert.strictEqual(writeFileSyncSpy.calledOnce, true)
 
       const [writePath, writeContent] = writeFileSyncSpy.firstCall.args
 
-      assert.equal(writePath, 'output/package.json')
+      assert.strictEqual(writePath, 'output/package.json')
 
       const writtenPackage = JSON.parse(writeContent)
 
-      assert.deepEqual(writtenPackage.dependencies, {
+      assert.deepStrictEqual(writtenPackage.dependencies, {
         lodash: '^4.17.21', // Comes from the first workspace
         axios: '^2.0.0', // Comes from the second workspace, overrides the first
         express: '^4.18.0' // Comes from the second workspace
       })
 
-      assert.isTrue(symlinkSyncSpy.calledOnce)
-      assert.isTrue(setOutputSpy.calledOnceWithExactly('temp-path', './output'))
-      assert.isTrue(setFailedSpy.notCalled)
+      assert.strictEqual(symlinkSyncSpy.calledOnce, true)
+      assert.strictEqual(
+        setOutputSpy.calledOnceWithExactly('temp-path', './output'),
+        true
+      )
+      assert.strictEqual(setFailedSpy.notCalled, true)
     })
 
     it('should remove existing symlink before creating new one', async () => {
@@ -138,15 +143,19 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(
+      assert.strictEqual(
         rmSyncSpy.calledOnceWithExactly('output/node_modules', {
           recursive: true,
           force: true
-        })
+        }),
+        true
       )
-      assert.isTrue(symlinkSyncSpy.calledOnce)
-      assert.isTrue(setOutputSpy.calledOnceWithExactly('temp-path', './output'))
-      assert.isTrue(setFailedSpy.notCalled)
+      assert.strictEqual(symlinkSyncSpy.calledOnce, true)
+      assert.strictEqual(
+        setOutputSpy.calledOnceWithExactly('temp-path', './output'),
+        true
+      )
+      assert.strictEqual(setFailedSpy.notCalled, true)
     })
   })
 
@@ -160,8 +169,8 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(setFailedSpy.firstCall.args[0], 'node_modules')
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(setFailedSpy.firstCall.args[0].includes('node_modules'))
     })
 
     it('should warn if workspace package.json not found', async () => {
@@ -177,8 +186,8 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(warningSpy.calledOnce)
-      assert.include(warningSpy.firstCall.args[0], 'package.json')
+      assert.strictEqual(warningSpy.calledOnce, true)
+      assert.ok(warningSpy.firstCall.args[0].includes('package.json'))
     })
 
     it('should fail if no dependencies found in any workspace', async () => {
@@ -193,10 +202,9 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(
-        setFailedSpy.firstCall.args[0],
-        'No production dependencies'
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(
+        setFailedSpy.firstCall.args[0].includes('No production dependencies')
       )
     })
 
@@ -225,9 +233,11 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(setFailedSpy.firstCall.args[0], 'workspace1/package.json')
-      assert.isTrue(setOutputSpy.notCalled)
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(
+        setFailedSpy.firstCall.args[0].includes('workspace1/package.json')
+      )
+      assert.strictEqual(setOutputSpy.notCalled, true)
     })
 
     it('should fail if symlink creation fails', async () => {
@@ -250,8 +260,8 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(setFailedSpy.firstCall.args[0], 'symlink')
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(setFailedSpy.firstCall.args[0].includes('symlink'))
     })
 
     it('should handle empty workspace list', async () => {
@@ -263,8 +273,8 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(setFailedSpy.firstCall.args[0], 'No workspace paths')
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(setFailedSpy.firstCall.args[0].includes('No workspace paths'))
     })
 
     it('should handle unexpected errors in catch block', async () => {
@@ -287,8 +297,11 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.isTrue(setFailedSpy.calledOnceWithExactly(errorMessage))
-      assert.isTrue(setOutputSpy.notCalled)
+      assert.strictEqual(
+        setFailedSpy.calledOnceWithExactly(errorMessage),
+        true
+      )
+      assert.strictEqual(setOutputSpy.notCalled, true)
     })
 
     it('should skip all empty package.json files and fail if no dependencies found', async () => {
@@ -310,12 +323,11 @@ describe('run', () => {
       await run(core, fileSystem)
 
       // Should warn for each empty package.json
-      assert.equal(warningSpy.callCount, 3)
+      assert.strictEqual(warningSpy.callCount, 3)
 
-      assert.isTrue(setFailedSpy.calledOnce)
-      assert.include(
-        setFailedSpy.firstCall.args[0],
-        'No production dependencies'
+      assert.strictEqual(setFailedSpy.calledOnce, true)
+      assert.ok(
+        setFailedSpy.firstCall.args[0].includes('No production dependencies')
       )
     })
   })

@@ -1,4 +1,5 @@
-import { assert } from 'chai'
+import { describe, it, beforeEach, afterEach } from 'node:test'
+import assert from 'node:assert'
 import sinon from 'sinon'
 import checkLicenses from './checkLicenses.ts'
 import type {
@@ -62,12 +63,11 @@ describe('checkLicenses', () => {
 
     const result = await checkLicenses(licenseChecker, options, core)
 
-    assert.deepEqual(result, mockPackages)
-    assert.isTrue(licenseChecker.init.calledOnce)
-    assert.deepEqual(licenseChecker.init.firstCall.args[0], {
+    assert.deepStrictEqual(result, mockPackages)
+    assert.strictEqual(licenseChecker.init.calledOnce, true)
+    assert.deepStrictEqual(licenseChecker.init.firstCall.args[0], {
       json: true,
       csv: false,
-      // @ts-expect-error - The markdown option is not typed in license-checker-rseidelsohn
       markdown: false,
       plainVertical: false,
       start: options.startPath,
@@ -95,14 +95,14 @@ describe('checkLicenses', () => {
     } catch (err) {
       assert.strictEqual(err, error)
     }
-    assert.isTrue(licenseChecker.init.calledOnce)
+    assert.strictEqual(licenseChecker.init.calledOnce, true)
   })
 
   it('should handle development dependencies', async () => {
     options.dependencyType = 'development'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.include(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       production: false,
       development: true
     })
@@ -112,7 +112,7 @@ describe('checkLicenses', () => {
     options.detailsOutputFormat = 'csv'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       json: false,
       csv: true,
       markdown: false
@@ -123,7 +123,7 @@ describe('checkLicenses', () => {
     options.detailsOutputFormat = 'markdown'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       json: false,
       csv: false,
       markdown: true
@@ -134,7 +134,7 @@ describe('checkLicenses', () => {
     options.detailsOutputFormat = 'plainVertical'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       json: false,
       csv: false,
       markdown: false,
@@ -146,7 +146,7 @@ describe('checkLicenses', () => {
     options.detailsOutputPath = './license-output.json'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.include(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       out: options.detailsOutputPath
     })
   })
@@ -154,16 +154,17 @@ describe('checkLicenses', () => {
   it('should log license checker options', async () => {
     await checkLicenses(licenseChecker, options, core)
 
-    assert.isTrue(core.info.calledOnce)
+    assert.strictEqual(core.info.calledOnce, true)
 
     const infoMessage = core.info.firstCall.args[0]
 
-    assert.include(
-      infoMessage,
-      'Start checking licenses with the following options'
+    assert.ok(
+      infoMessage.includes(
+        'Start checking licenses with the following options'
+      )
     )
-    assert.include(infoMessage, options.startPath)
-    assert.include(infoMessage, 'MIT')
+    assert.ok(infoMessage.includes(options.startPath))
+    assert.ok(infoMessage.includes('MIT'))
   })
 
   it('should handle customFields as an object', async () => {
@@ -177,7 +178,7 @@ describe('checkLicenses', () => {
     options.customFields = customFieldsObj
     await checkLicenses(licenseChecker, options, core)
 
-    assert.include(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       customFormat: customFieldsObj
     })
   })
@@ -190,7 +191,7 @@ describe('checkLicenses', () => {
 
     const initOptions = licenseChecker.init.firstCall.args[0]
 
-    assert.isUndefined(initOptions.excludePackages)
+    assert.strictEqual(initOptions.excludePackages, undefined)
   })
 
   it('should handle undefined excludePackagesStartingWith', async () => {
@@ -208,7 +209,7 @@ describe('checkLicenses', () => {
 
     const initOptions = licenseChecker.init.firstCall.args[0]
 
-    assert.isUndefined(initOptions.excludePackagesStartingWith)
+    assert.strictEqual(initOptions.excludePackagesStartingWith, undefined)
   })
 
   it('should handle undefined onlyAllow', async () => {
@@ -219,7 +220,7 @@ describe('checkLicenses', () => {
 
     const initOptions = licenseChecker.init.firstCall.args[0]
 
-    assert.isUndefined(initOptions.onlyAllow)
+    assert.strictEqual(initOptions.onlyAllow, undefined)
   })
 
   it('should handle undefined clarificationsPath', async () => {
@@ -230,7 +231,7 @@ describe('checkLicenses', () => {
 
     const initOptions = licenseChecker.init.firstCall.args[0]
 
-    assert.isUndefined(initOptions.clarificationsFile)
+    assert.strictEqual(initOptions.clarificationsFile, undefined)
   })
 
   it('should handle undefined customFields', async () => {
@@ -241,14 +242,14 @@ describe('checkLicenses', () => {
 
     const initOptions = licenseChecker.init.firstCall.args[0]
 
-    assert.isUndefined(initOptions.customFormat)
+    assert.strictEqual(initOptions.customFormat, undefined)
   })
 
   it('should handle all dependencies type', async () => {
     options.dependencyType = 'all'
     await checkLicenses(licenseChecker, options, core)
 
-    assert.include(licenseChecker.init.firstCall.args[0], {
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       production: false,
       development: false
     })
@@ -267,7 +268,7 @@ describe('checkLicenses', () => {
 
     const result = await checkLicenses(licenseChecker, options, core)
 
-    assert.deepEqual(result, mockPackages)
+    assert.deepStrictEqual(result, mockPackages)
     assert.strictEqual(result['package-1'].licenses, '(MIT OR Apache-2.0)')
   })
 
@@ -283,7 +284,7 @@ describe('checkLicenses', () => {
 
     const result = await checkLicenses(licenseChecker, options, core)
 
-    assert.deepEqual(result, mockPackages)
+    assert.deepStrictEqual(result, mockPackages)
     assert.strictEqual(result['package-1'].licenses, '(MIT AND BSD-3-Clause)')
   })
 
@@ -302,8 +303,8 @@ describe('checkLicenses', () => {
 
     const result = await checkLicenses(licenseChecker, options, core)
 
-    assert.deepEqual(result, mockPackages)
-    assert.include(licenseChecker.init.firstCall.args[0], {
+    assert.deepStrictEqual(result, mockPackages)
+    assert.partialDeepStrictEqual(licenseChecker.init.firstCall.args[0], {
       onlyAllow: 'MIT;Apache-2.0;ISC'
     })
   })
@@ -321,6 +322,6 @@ describe('checkLicenses', () => {
 
     const result = await checkLicenses(licenseChecker, options, core)
 
-    assert.deepEqual(result, mockPackagesWithEmptyLicense)
+    assert.deepStrictEqual(result, mockPackagesWithEmptyLicense)
   })
 })
