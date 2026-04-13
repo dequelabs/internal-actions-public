@@ -1,6 +1,10 @@
 import fs from 'fs'
 import path from 'path'
-import checkLicenses from './checkLicenses.ts'
+import checkLicensesRaw from './checkLicensesRaw.ts'
+import checkOnlyAllow from './checkOnlyAllow.ts'
+import formatOutput from './formatOutput.ts'
+import defaultExpandWorkspaces from './expandWorkspaces.ts'
+import defaultResolveNodeModules from './resolveNodeModules.ts'
 import {
   DEPENDENCY_TYPES,
   DETAILS_OUTPUT_FORMATS,
@@ -8,13 +12,20 @@ import {
   type RunOptions,
   type DetailsOutputFormat,
   type CustomFields,
-  type CheckLicensesOptions
+  type CheckLicensesRawOptions,
+  type ModuleInfos
 } from './types.ts'
 
-export default async function run({ core, licenseChecker }: RunOptions) {
+export default async function run({
+  core,
+  licenseChecker,
+  expandWorkspaces = defaultExpandWorkspaces,
+  resolveNodeModules = defaultResolveNodeModules
+}: RunOptions) {
   try {
     const dependencyType = core.getInput('dependency-type') as DependencyType
     const startPath = core.getInput('start-path')
+    const startPaths = core.getInput('start-paths')
     const customFieldsPath = core.getInput('custom-fields-path')
     const clarificationsPath = core.getInput('clarifications-path')
     const onlyAllow = core.getInput('only-allow')
@@ -37,13 +48,6 @@ export default async function run({ core, licenseChecker }: RunOptions) {
     if (!DETAILS_OUTPUT_FORMATS.includes(detailsOutputFormat)) {
       core.setFailed(
         `Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${DETAILS_OUTPUT_FORMATS.join(', ')}`
-      )
-      return
-    }
-
-    if (!fs.existsSync(path.resolve(startPath))) {
-      core.setFailed(
-        `The file specified by start-path does not exist: ${startPath}`
       )
       return
     }
@@ -91,26 +95,88 @@ export default async function run({ core, licenseChecker }: RunOptions) {
       }
     }
 
-    const options: CheckLicensesOptions = {
-      startPath,
-      dependencyType,
-      customFields,
-      onlyAllow,
-      detailsOutputPath,
-      detailsOutputFormat,
-      ...(excludePackages.trim().length && { excludePackages }),
-      ...(excludePackagesStartingWith.trim().length && {
-        excludePackagesStartingWith
-      }),
-      ...(clarificationsPath.trim().length && { clarificationsPath })
+    // Determine user-provided paths
+    let userPaths: string[]
+    if (startPaths.trim().length > 0) {
+      userPaths = startPaths
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => p.length > 0)
+
+      if (!userPaths.length) {
+        core.setFailed('start-paths is provided but contains no valid paths')
+        return
+      }
+    } else {
+      userPaths = [startPath]
     }
-    core.info(`Provided options:\n${JSON.stringify(options)}`)
 
-    const result = await checkLicenses(licenseChecker, options, core)
-    const licenseCheckerSummary = licenseChecker.asSummary(result)
-    const hasLicenseCheckerSummary = !!licenseCheckerSummary.length
+    // Validate all user-provided paths exist and contain a package.json
+    const inputName =
+      startPaths.trim().length > 0 ? 'start-paths' : 'start-path'
+    for (const p of userPaths) {
+      if (!fs.existsSync(path.resolve(p))) {
+        core.setFailed(`${inputName} "${p}" does not exist`)
+        return
+      }
+      if (!fs.existsSync(path.resolve(p, 'package.json'))) {
+        core.setFailed(
+          `${inputName} "${p}" does not contain a package.json file`
+        )
+        return
+      }
+    }
 
-    if (hasLicenseCheckerSummary) {
+    // Smart scan: expand workspaces, resolve node_modules, scan each
+    const allResults: ModuleInfos[] = []
+    for (const p of userPaths) {
+      const expanded = expandWorkspaces(path.resolve(p))
+      for (const wsPath of expanded) {
+        const { scanPath, cleanup } = resolveNodeModules(wsPath)
+        try {
+          const rawOptions: CheckLicensesRawOptions = {
+            startPath: scanPath,
+            dependencyType,
+            customFields,
+            ...(excludePackages.trim().length && { excludePackages }),
+            ...(excludePackagesStartingWith.trim().length && {
+              excludePackagesStartingWith
+            }),
+            ...(clarificationsPath.trim().length && { clarificationsPath })
+          }
+          const result = await checkLicensesRaw(
+            licenseChecker,
+            rawOptions,
+            core
+          )
+          allResults.push(result)
+        } finally {
+          cleanup()
+        }
+      }
+    }
+
+    const merged: ModuleInfos = Object.assign({}, ...allResults)
+
+    try {
+      checkOnlyAllow(merged, onlyAllow)
+    } catch (error) {
+      core.setFailed((error as Error).message)
+      return
+    }
+
+    if (detailsOutputPath) {
+      const formatted = formatOutput(
+        licenseChecker,
+        merged,
+        detailsOutputFormat,
+        customFields
+      )
+      fs.writeFileSync(path.resolve(detailsOutputPath), formatted, 'utf8')
+    }
+
+    const licenseCheckerSummary = licenseChecker.asSummary(merged)
+    if (licenseCheckerSummary.length) {
       core.info(`License checker summary:\n${licenseCheckerSummary}`)
     } else {
       throw new Error('No licenses found')

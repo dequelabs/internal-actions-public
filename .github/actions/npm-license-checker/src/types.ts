@@ -5,9 +5,19 @@ export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type ModuleInfos = licenseChecker.ModuleInfos
 export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
   asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
+  asCSV: (
+    sorted: licenseChecker.ModuleInfos,
+    customFormat?: CustomFields,
+    csvComponentPrefix?: string
+  ) => string
+  asMarkDown: (
+    sorted: licenseChecker.ModuleInfos,
+    customFormat?: CustomFields
+  ) => string
+  asPlainVertical: (sorted: licenseChecker.ModuleInfos) => string
 }
 
-export const DEPENDENCY_TYPES = ['production', 'development', 'all'] as const
+export const DEPENDENCY_TYPES = ['production', 'all'] as const
 export type DependencyType = (typeof DEPENDENCY_TYPES)[number]
 
 export const DETAILS_OUTPUT_FORMATS = [
@@ -22,19 +32,23 @@ export type DetailsOutputFormat = (typeof DETAILS_OUTPUT_FORMATS)[number]
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CustomFields = Record<string, any>
 
-export type CheckLicensesOptions = {
+export type CheckLicensesRawOptions = {
   dependencyType: DependencyType
   startPath: string
   customFields?: CustomFields
   clarificationsPath?: string
-  onlyAllow?: string
-  detailsOutputPath?: string
   excludePackages?: string
   excludePackagesStartingWith?: string
-  detailsOutputFormat: DetailsOutputFormat
+}
+
+export interface ResolvedNodeModules {
+  scanPath: string
+  cleanup: () => void
 }
 
 export interface RunOptions {
   core: Core
   licenseChecker: LicenseChecker
+  expandWorkspaces?: (startPath: string) => string[]
+  resolveNodeModules?: (startPath: string) => ResolvedNodeModules
 }

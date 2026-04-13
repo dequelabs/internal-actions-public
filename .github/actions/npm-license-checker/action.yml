@@ -2,11 +2,13 @@ name: npm-license-checker
 description: A GitHub action to check 3rd-party licenses and output a report of licenses used
 inputs:
   dependency-type:
-    description: 'Type of dependencies to include: production | development | all'
+    description: 'Type of dependencies to include: production | all'
     default: all
   start-path:
     description: 'The path to begin scanning for licenses'
     default: './'
+  start-paths:
+    description: 'A comma-separated list of paths to scan for licenses. When provided, results are merged into a single report. Takes precedence over start-path.'
   custom-fields-path:
     description: 'A path to a file to customize the detail output. See: https://www.npmjs.com/package/license-checker-rseidelsohn#custom-format'
   clarifications-path:

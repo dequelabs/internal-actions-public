@@ -1,0 +1,11 @@
+{
+  "name": "@deque/npm-license-checker-action-yarn-single-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "is-number": "7.0.0"
+  },
+  "devDependencies": {
+    "is-plain-object": "5.0.0"
+  }
+}
