@@ -3,7 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "description": "A GitHub action to check 3rd-party licenses",
-  "type": "module",
   "license": "MPL-2.0",
   "engines": {
     "node": ">=24"

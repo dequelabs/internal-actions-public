@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "GitHub Action to manage accessibility SLA breach labels on issues.",
-  "type": "module",
   "main": "dist/index.js",
   "engines": {
     "node": ">=24"

@@ -2,7 +2,6 @@
   "name": "create-temp-package-json-v1",
   "version": "1.0.0",
   "description": "A GitHub Action to create a temporary `package.json` with production dependencies from specified workspaces.",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dequelabs/axe-api-team-public.git"
