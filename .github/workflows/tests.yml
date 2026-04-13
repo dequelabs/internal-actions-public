@@ -37,6 +37,7 @@ jobs:
       - run: npm run coverage --workspace=npm-license-checker
 
   npm-license-checker-e2e:
+    name: npm-license-checker-e2e (${{ matrix.fixture.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: lint
@@ -47,27 +48,27 @@ jobs:
           - name: npm-single
             pm: npm
             install: 'npm ci'
-            expect: '@deque/npm-license-checker-action-npm-single-fixture@1.0.0 is-number@7.0.0'
+            expect: 'is-number@7.0.0'
           - name: npm-workspaces
             pm: npm
             install: 'npm ci'
-            expect: '@deque/npm-license-checker-action-npm-workspaces-fixture@1.0.0 @deque/npm-license-checker-action-app-a@1.0.0 @deque/npm-license-checker-action-app-b@1.0.0 is-number@7.0.0 is-number@6.0.0 is-odd@3.0.1'
+            expect: 'is-number@7.0.0 is-number@6.0.0 is-odd@3.0.1'
           - name: pnpm-single
             pm: pnpm
             install: 'pnpm install --frozen-lockfile'
-            expect: '@deque/npm-license-checker-action-pnpm-single-fixture@1.0.0 is-number@7.0.0 is-odd@3.0.1'
+            expect: 'is-number@7.0.0 is-odd@3.0.1'
           - name: pnpm-workspaces
             pm: pnpm
             install: 'pnpm install --frozen-lockfile'
-            expect: '@deque/npm-license-checker-action-pnpm-workspaces-fixture@1.0.0 @deque/npm-license-checker-action-app-a@1.0.0 @deque/npm-license-checker-action-app-b@1.0.0 is-number@7.0.0 is-odd@3.0.1'
+            expect: 'is-number@7.0.0 is-odd@3.0.1'
           - name: yarn-single
             pm: yarn
             install: 'yarn install --frozen-lockfile'
-            expect: '@deque/npm-license-checker-action-yarn-single-fixture@1.0.0 is-number@7.0.0'
+            expect: 'is-number@7.0.0'
           - name: yarn-workspaces
             pm: yarn
             install: 'yarn install --frozen-lockfile'
-            expect: '@deque/npm-license-checker-action-yarn-workspaces-fixture@1.0.0 @deque/npm-license-checker-action-app-a@1.0.0 @deque/npm-license-checker-action-app-b@1.0.0 is-number@7.0.0 is-number@6.0.0 is-odd@3.0.1'
+            expect: 'is-number@7.0.0 is-number@6.0.0 is-odd@3.0.1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,6 +89,7 @@ jobs:
           start-paths: .github/actions/npm-license-checker/src/fixtures/${{ matrix.fixture.name }}
           dependency-type: production
           details-output-path: /tmp/credits.json
+          exclude-packages-starting-with: '@deque/'
       - name: Verify output
         run: |
           test -s /tmp/credits.json
