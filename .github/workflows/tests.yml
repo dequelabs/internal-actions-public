@@ -17,7 +17,8 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint -ws
+      - run: npm run typecheck
+      - run: npm run lint --workspaces
 
   npm-license-checker:
     runs-on: ubuntu-latest

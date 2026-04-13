@@ -1,5 +1,5 @@
 import { join, resolve } from 'path'
-import type { Core, FileSystem } from './types'
+import type { Core, FileSystem } from './types.ts'
 
 interface WorkspaceDependencies {
   [key: string]: string

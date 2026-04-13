@@ -1,5 +1,5 @@
-import core from '@actions/core'
-import {
+import type core from '@actions/core'
+import type {
   readFileSync,
   writeFileSync,
   mkdirSync,

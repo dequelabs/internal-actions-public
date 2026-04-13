@@ -39201,206 +39201,6 @@ module.exports = function(argument) {
 
 /***/ }),
 
-/***/ 8491:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports["default"] = checkLicenses;
-const types_1 = __nccwpck_require__(2658);
-async function checkLicenses(licenseChecker, options, core) {
-    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat, clarificationsPath } = options;
-    const licenseCheckerOptions = {
-        json: detailsOutputFormat === types_1.DetailsOutputFormat.JSON,
-        csv: detailsOutputFormat === types_1.DetailsOutputFormat.CSV,
-        markdown: detailsOutputFormat === types_1.DetailsOutputFormat.Markdown,
-        plainVertical: detailsOutputFormat === types_1.DetailsOutputFormat.PlainVertical,
-        start: startPath,
-        production: dependencyType === types_1.DependencyType.Production,
-        development: dependencyType === types_1.DependencyType.Development,
-        out: detailsOutputPath,
-        onlyAllow,
-        customFormat: customFields,
-        excludePackages,
-        excludePackagesStartingWith,
-        clarificationsFile: clarificationsPath
-    };
-    core.info(`Start checking licenses with the following options:\n${JSON.stringify(licenseCheckerOptions)}`);
-    return new Promise((resolve, reject) => {
-        licenseChecker.init(licenseCheckerOptions, (err, packages) => {
-            if (err) {
-                reject(err);
-            }
-            else {
-                resolve(packages);
-            }
-        });
-    });
-}
-
-
-/***/ }),
-
-/***/ 1719:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(7930));
-const licenseChecker = __importStar(__nccwpck_require__(3090));
-const run_1 = __importDefault(__nccwpck_require__(4130));
-(0, run_1.default)({ core, licenseChecker: licenseChecker });
-
-
-/***/ }),
-
-/***/ 4130:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports["default"] = run;
-const fs_1 = __importDefault(__nccwpck_require__(9896));
-const path_1 = __importDefault(__nccwpck_require__(6928));
-const checkLicenses_1 = __importDefault(__nccwpck_require__(8491));
-const types_1 = __nccwpck_require__(2658);
-async function run({ core, licenseChecker }) {
-    try {
-        const dependencyType = core.getInput('dependency-type');
-        const startPath = core.getInput('start-path');
-        const customFieldsPath = core.getInput('custom-fields-path');
-        const clarificationsPath = core.getInput('clarifications-path');
-        const onlyAllow = core.getInput('only-allow');
-        const detailsOutputPath = core.getInput('details-output-path');
-        const detailsOutputFormat = core.getInput('details-output-format');
-        const excludePackages = core.getInput('exclude-packages');
-        const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with');
-        if (!Object.values(types_1.DependencyType).includes(dependencyType)) {
-            core.setFailed(`Invalid dependency-type: ${dependencyType}. Allowed values are: ${Object.values(types_1.DependencyType).join(', ')}`);
-            return;
-        }
-        if (!Object.values(types_1.DetailsOutputFormat).includes(detailsOutputFormat)) {
-            core.setFailed(`Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${Object.values(types_1.DetailsOutputFormat).join(', ')}`);
-            return;
-        }
-        if (!fs_1.default.existsSync(path_1.default.resolve(startPath))) {
-            core.setFailed(`The file specified by start-path does not exist: ${startPath}`);
-            return;
-        }
-        if (customFieldsPath && !fs_1.default.existsSync(path_1.default.resolve(customFieldsPath))) {
-            core.setFailed(`The file specified by custom-fields-path does not exist: ${customFieldsPath}`);
-            return;
-        }
-        if (clarificationsPath &&
-            !fs_1.default.existsSync(path_1.default.resolve(clarificationsPath))) {
-            core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
-        }
-        let customFields = {
-            name: '',
-            version: '',
-            licenses: '',
-            licenseText: ''
-        };
-        if (customFieldsPath) {
-            core.info(`Provided custom fields path "${customFieldsPath}", reading custom fields...`);
-            try {
-                const customFieldsContent = fs_1.default.readFileSync(path_1.default.resolve(customFieldsPath), 'utf8');
-                customFields = JSON.parse(customFieldsContent);
-                core.info(`Custom fields: ${customFieldsContent}`);
-            }
-            catch (error) {
-                core.setFailed(`Error reading or parsing customFieldsPath: ${error.message}`);
-                return;
-            }
-        }
-        const options = {
-            startPath,
-            dependencyType,
-            customFields,
-            onlyAllow,
-            detailsOutputPath,
-            detailsOutputFormat,
-            ...(excludePackages.trim().length && { excludePackages }),
-            ...(excludePackagesStartingWith.trim().length && {
-                excludePackagesStartingWith
-            }),
-            ...(clarificationsPath.trim().length && { clarificationsPath })
-        };
-        core.info(`Provided options:\n${JSON.stringify(options)}`);
-        const result = await (0, checkLicenses_1.default)(licenseChecker, options, core);
-        const licenseCheckerSummary = licenseChecker.asSummary(result);
-        const hasLicenseCheckerSummary = !!licenseCheckerSummary.length;
-        if (hasLicenseCheckerSummary) {
-            core.info(`License checker summary:\n${licenseCheckerSummary}`);
-        }
-        else {
-            throw new Error('No licenses found');
-        }
-    }
-    catch (error) {
-        core.setFailed(`Error checking licenses: ${error.message}`);
-    }
-}
-
-
-/***/ }),
-
-/***/ 2658:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DetailsOutputFormat = exports.DependencyType = void 0;
-var DependencyType;
-(function (DependencyType) {
-    DependencyType["Production"] = "production";
-    DependencyType["Development"] = "development";
-    DependencyType["All"] = "all";
-})(DependencyType || (exports.DependencyType = DependencyType = {}));
-var DetailsOutputFormat;
-(function (DetailsOutputFormat) {
-    DetailsOutputFormat["JSON"] = "json";
-    DetailsOutputFormat["CSV"] = "csv";
-    DetailsOutputFormat["Markdown"] = "markdown";
-    DetailsOutputFormat["PlainVertical"] = "plainVertical";
-})(DetailsOutputFormat || (exports.DetailsOutputFormat = DetailsOutputFormat = {}));
-
-
-/***/ }),
-
 /***/ 2613:
 /***/ ((module) => {
 
@@ -50461,29 +50261,177 @@ exports.Minipass = Minipass;
 
 /***/ }),
 
-/***/ 3090:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+/***/ 3922:
+/***/ ((module) => {
 
 "use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
+module.exports = /*#__PURE__*/JSON.parse('{"assert":true,"node:assert":[">= 14.18 && < 15",">= 16"],"assert/strict":">= 15","node:assert/strict":">= 16","async_hooks":">= 8","node:async_hooks":[">= 14.18 && < 15",">= 16"],"buffer_ieee754":">= 0.5 && < 0.9.7","buffer":true,"node:buffer":[">= 14.18 && < 15",">= 16"],"child_process":true,"node:child_process":[">= 14.18 && < 15",">= 16"],"cluster":">= 0.5","node:cluster":[">= 14.18 && < 15",">= 16"],"console":true,"node:console":[">= 14.18 && < 15",">= 16"],"constants":true,"node:constants":[">= 14.18 && < 15",">= 16"],"crypto":true,"node:crypto":[">= 14.18 && < 15",">= 16"],"_debug_agent":">= 1 && < 8","_debugger":"< 8","dgram":true,"node:dgram":[">= 14.18 && < 15",">= 16"],"diagnostics_channel":[">= 14.17 && < 15",">= 15.1"],"node:diagnostics_channel":[">= 14.18 && < 15",">= 16"],"dns":true,"node:dns":[">= 14.18 && < 15",">= 16"],"dns/promises":">= 15","node:dns/promises":">= 16","domain":">= 0.7.12","node:domain":[">= 14.18 && < 15",">= 16"],"events":true,"node:events":[">= 14.18 && < 15",">= 16"],"freelist":"< 6","fs":true,"node:fs":[">= 14.18 && < 15",">= 16"],"fs/promises":[">= 10 && < 10.1",">= 14"],"node:fs/promises":[">= 14.18 && < 15",">= 16"],"_http_agent":">= 0.11.1","node:_http_agent":[">= 14.18 && < 15",">= 16"],"_http_client":">= 0.11.1","node:_http_client":[">= 14.18 && < 15",">= 16"],"_http_common":">= 0.11.1","node:_http_common":[">= 14.18 && < 15",">= 16"],"_http_incoming":">= 0.11.1","node:_http_incoming":[">= 14.18 && < 15",">= 16"],"_http_outgoing":">= 0.11.1","node:_http_outgoing":[">= 14.18 && < 15",">= 16"],"_http_server":">= 0.11.1","node:_http_server":[">= 14.18 && < 15",">= 16"],"http":true,"node:http":[">= 14.18 && < 15",">= 16"],"http2":">= 8.8","node:http2":[">= 14.18 && < 15",">= 16"],"https":true,"node:https":[">= 14.18 && < 15",">= 16"],"inspector":">= 8","node:inspector":[">= 14.18 && < 15",">= 16"],"inspector/promises":[">= 19"],"node:inspector/promises":[">= 19"],"_linklist":"< 8","module":true,"node:module":[">= 14.18 && < 15",">= 16"],"net":true,"node:net":[">= 14.18 && < 15",">= 16"],"node-inspect/lib/_inspect":">= 7.6 && < 12","node-inspect/lib/internal/inspect_client":">= 7.6 && < 12","node-inspect/lib/internal/inspect_repl":">= 7.6 && < 12","os":true,"node:os":[">= 14.18 && < 15",">= 16"],"path":true,"node:path":[">= 14.18 && < 15",">= 16"],"path/posix":">= 15.3","node:path/posix":">= 16","path/win32":">= 15.3","node:path/win32":">= 16","perf_hooks":">= 8.5","node:perf_hooks":[">= 14.18 && < 15",">= 16"],"process":">= 1","node:process":[">= 14.18 && < 15",">= 16"],"punycode":">= 0.5","node:punycode":[">= 14.18 && < 15",">= 16"],"querystring":true,"node:querystring":[">= 14.18 && < 15",">= 16"],"readline":true,"node:readline":[">= 14.18 && < 15",">= 16"],"readline/promises":">= 17","node:readline/promises":">= 17","repl":true,"node:repl":[">= 14.18 && < 15",">= 16"],"node:sea":[">= 20.12 && < 21",">= 21.7"],"smalloc":">= 0.11.5 && < 3","node:sqlite":[">= 22.13 && < 23",">= 23.4"],"_stream_duplex":">= 0.9.4","node:_stream_duplex":[">= 14.18 && < 15",">= 16"],"_stream_transform":">= 0.9.4","node:_stream_transform":[">= 14.18 && < 15",">= 16"],"_stream_wrap":">= 1.4.1","node:_stream_wrap":[">= 14.18 && < 15",">= 16"],"_stream_passthrough":">= 0.9.4","node:_stream_passthrough":[">= 14.18 && < 15",">= 16"],"_stream_readable":">= 0.9.4","node:_stream_readable":[">= 14.18 && < 15",">= 16"],"_stream_writable":">= 0.9.4","node:_stream_writable":[">= 14.18 && < 15",">= 16"],"stream":true,"node:stream":[">= 14.18 && < 15",">= 16"],"stream/consumers":">= 16.7","node:stream/consumers":">= 16.7","stream/promises":">= 15","node:stream/promises":">= 16","stream/web":">= 16.5","node:stream/web":">= 16.5","string_decoder":true,"node:string_decoder":[">= 14.18 && < 15",">= 16"],"sys":[">= 0.4 && < 0.7",">= 0.8"],"node:sys":[">= 14.18 && < 15",">= 16"],"test/reporters":">= 19.9 && < 20.2","node:test/reporters":[">= 18.17 && < 19",">= 19.9",">= 20"],"test/mock_loader":">= 22.3 && < 22.7","node:test/mock_loader":">= 22.3 && < 22.7","node:test":[">= 16.17 && < 17",">= 18"],"timers":true,"node:timers":[">= 14.18 && < 15",">= 16"],"timers/promises":">= 15","node:timers/promises":">= 16","_tls_common":">= 0.11.13","node:_tls_common":[">= 14.18 && < 15",">= 16"],"_tls_legacy":">= 0.11.3 && < 10","_tls_wrap":">= 0.11.3","node:_tls_wrap":[">= 14.18 && < 15",">= 16"],"tls":true,"node:tls":[">= 14.18 && < 15",">= 16"],"trace_events":">= 10","node:trace_events":[">= 14.18 && < 15",">= 16"],"tty":true,"node:tty":[">= 14.18 && < 15",">= 16"],"url":true,"node:url":[">= 14.18 && < 15",">= 16"],"util":true,"node:util":[">= 14.18 && < 15",">= 16"],"util/types":">= 15.3","node:util/types":">= 16","v8/tools/arguments":">= 10 && < 12","v8/tools/codemap":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/consarray":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/csvparser":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/logreader":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/profile_view":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/splaytree":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8":">= 1","node:v8":[">= 14.18 && < 15",">= 16"],"vm":true,"node:vm":[">= 14.18 && < 15",">= 16"],"wasi":[">= 13.4 && < 13.5",">= 18.17 && < 19",">= 20"],"node:wasi":[">= 18.17 && < 19",">= 20"],"worker_threads":">= 11.7","node:worker_threads":[">= 14.18 && < 15",">= 16"],"zlib":">= 0.5","node:zlib":[">= 14.18 && < 15",">= 16"]}');
 
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  asCSV: () => (/* binding */ asCSV),
-  asFiles: () => (/* binding */ asFiles),
-  asMarkDown: () => (/* binding */ asMarkDown),
-  asPlainVertical: () => (/* binding */ asPlainVertical),
-  asSummary: () => (/* binding */ asSummary),
-  asTree: () => (/* binding */ asTree),
-  filterAttributes: () => (/* binding */ filterAttributes),
-  init: () => (/* binding */ init),
-  parseJson: () => (/* binding */ parseJson),
-  print: () => (/* binding */ print),
-  recursivelyCollectAllDependencies: () => (/* binding */ recursivelyCollectAllDependencies),
-  writeOutput: () => (/* binding */ writeOutput)
+/***/ }),
+
+/***/ 5298:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('{"topLevel":{"dependancies":"dependencies","dependecies":"dependencies","depdenencies":"dependencies","devEependencies":"devDependencies","depends":"dependencies","dev-dependencies":"devDependencies","devDependences":"devDependencies","devDepenencies":"devDependencies","devdependencies":"devDependencies","repostitory":"repository","repo":"repository","prefereGlobal":"preferGlobal","hompage":"homepage","hampage":"homepage","autohr":"author","autor":"author","contributers":"contributors","publicationConfig":"publishConfig","script":"scripts"},"bugs":{"web":"url","name":"url"},"script":{"server":"start","tests":"test"}}');
+
+/***/ }),
+
+/***/ 5977:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('{"repositories":"\'repositories\' (plural) Not supported. Please pick one as the \'repository\' field","missingRepository":"No repository field.","brokenGitUrl":"Probably broken git url: %s","nonObjectScripts":"scripts must be an object","nonStringScript":"script values must be string commands","nonArrayFiles":"Invalid \'files\' member","invalidFilename":"Invalid filename in \'files\' list: %s","nonArrayBundleDependencies":"Invalid \'bundleDependencies\' list. Must be array of package names","nonStringBundleDependency":"Invalid bundleDependencies member: %s","nonDependencyBundleDependency":"Non-dependency in bundleDependencies: %s","nonObjectDependencies":"%s field must be an object","nonStringDependency":"Invalid dependency: %s %s","deprecatedArrayDependencies":"specifying %s as array is deprecated","deprecatedModules":"modules field is deprecated","nonArrayKeywords":"keywords should be an array of strings","nonStringKeyword":"keywords should be an array of strings","conflictingName":"%s is also the name of a node core module.","nonStringDescription":"\'description\' field should be a string","missingDescription":"No description","missingReadme":"No README data","missingLicense":"No license field.","nonEmailUrlBugsString":"Bug string field must be url, email, or {email,url}","nonUrlBugsUrlField":"bugs.url field must be a string url. Deleted.","nonEmailBugsEmailField":"bugs.email field must be a string email. Deleted.","emptyNormalizedBugs":"Normalized value of bugs field is an empty object. Deleted.","nonUrlHomepage":"homepage field must be a string url. Deleted.","invalidLicense":"license should be a valid SPDX license expression","typo":"%s should probably be %s."}');
+
+/***/ }),
+
+/***/ 3290:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('["389-exception","Asterisk-exception","Autoconf-exception-2.0","Autoconf-exception-3.0","Autoconf-exception-generic","Autoconf-exception-generic-3.0","Autoconf-exception-macro","Bison-exception-1.24","Bison-exception-2.2","Bootloader-exception","Classpath-exception-2.0","CLISP-exception-2.0","cryptsetup-OpenSSL-exception","DigiRule-FOSS-exception","eCos-exception-2.0","Fawkes-Runtime-exception","FLTK-exception","fmt-exception","Font-exception-2.0","freertos-exception-2.0","GCC-exception-2.0","GCC-exception-2.0-note","GCC-exception-3.1","Gmsh-exception","GNAT-exception","GNOME-examples-exception","GNU-compiler-exception","gnu-javamail-exception","GPL-3.0-interface-exception","GPL-3.0-linking-exception","GPL-3.0-linking-source-exception","GPL-CC-1.0","GStreamer-exception-2005","GStreamer-exception-2008","i2p-gpl-java-exception","KiCad-libraries-exception","LGPL-3.0-linking-exception","libpri-OpenH323-exception","Libtool-exception","Linux-syscall-note","LLGPL","LLVM-exception","LZMA-exception","mif-exception","OCaml-LGPL-linking-exception","OCCT-exception-1.0","OpenJDK-assembly-exception-1.0","openvpn-openssl-exception","PS-or-PDF-font-exception-20170817","QPL-1.0-INRIA-2004-exception","Qt-GPL-exception-1.0","Qt-LGPL-exception-1.1","Qwt-exception-1.0","SANE-exception","SHL-2.0","SHL-2.1","stunnel-exception","SWI-exception","Swift-exception","Texinfo-exception","u-boot-exception-2.0","UBDL-exception","Universal-FOSS-exception-1.0","vsftpd-openssl-exception","WxWindows-exception-3.1","x11vnc-openssl-exception"]');
+
+/***/ }),
+
+/***/ 6127:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('["AGPL-1.0","AGPL-3.0","BSD-2-Clause-FreeBSD","BSD-2-Clause-NetBSD","GFDL-1.1","GFDL-1.2","GFDL-1.3","GPL-1.0","GPL-2.0","GPL-2.0-with-GCC-exception","GPL-2.0-with-autoconf-exception","GPL-2.0-with-bison-exception","GPL-2.0-with-classpath-exception","GPL-2.0-with-font-exception","GPL-3.0","GPL-3.0-with-GCC-exception","GPL-3.0-with-autoconf-exception","LGPL-2.0","LGPL-2.1","LGPL-3.0","Net-SNMP","Nunit","StandardML-NJ","bzip2-1.0.5","eCos-2.0","wxWindows"]');
+
+/***/ }),
+
+/***/ 6374:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('["0BSD","3D-Slicer-1.0","AAL","ADSL","AFL-1.1","AFL-1.2","AFL-2.0","AFL-2.1","AFL-3.0","AGPL-1.0-only","AGPL-1.0-or-later","AGPL-3.0-only","AGPL-3.0-or-later","AMD-newlib","AMDPLPA","AML","AML-glslang","AMPAS","ANTLR-PD","ANTLR-PD-fallback","APAFML","APL-1.0","APSL-1.0","APSL-1.1","APSL-1.2","APSL-2.0","ASWF-Digital-Assets-1.0","ASWF-Digital-Assets-1.1","Abstyles","AdaCore-doc","Adobe-2006","Adobe-Display-PostScript","Adobe-Glyph","Adobe-Utopia","Afmparse","Aladdin","Apache-1.0","Apache-1.1","Apache-2.0","App-s2p","Arphic-1999","Artistic-1.0","Artistic-1.0-Perl","Artistic-1.0-cl8","Artistic-2.0","BSD-1-Clause","BSD-2-Clause","BSD-2-Clause-Darwin","BSD-2-Clause-Patent","BSD-2-Clause-Views","BSD-2-Clause-first-lines","BSD-3-Clause","BSD-3-Clause-Attribution","BSD-3-Clause-Clear","BSD-3-Clause-HP","BSD-3-Clause-LBNL","BSD-3-Clause-Modification","BSD-3-Clause-No-Military-License","BSD-3-Clause-No-Nuclear-License","BSD-3-Clause-No-Nuclear-License-2014","BSD-3-Clause-No-Nuclear-Warranty","BSD-3-Clause-Open-MPI","BSD-3-Clause-Sun","BSD-3-Clause-acpica","BSD-3-Clause-flex","BSD-4-Clause","BSD-4-Clause-Shortened","BSD-4-Clause-UC","BSD-4.3RENO","BSD-4.3TAHOE","BSD-Advertising-Acknowledgement","BSD-Attribution-HPND-disclaimer","BSD-Inferno-Nettverk","BSD-Protection","BSD-Source-Code","BSD-Source-beginning-file","BSD-Systemics","BSD-Systemics-W3Works","BSL-1.0","BUSL-1.1","Baekmuk","Bahyph","Barr","Beerware","BitTorrent-1.0","BitTorrent-1.1","Bitstream-Charter","Bitstream-Vera","BlueOak-1.0.0","Boehm-GC","Borceux","Brian-Gladman-2-Clause","Brian-Gladman-3-Clause","C-UDA-1.0","CAL-1.0","CAL-1.0-Combined-Work-Exception","CATOSL-1.1","CC-BY-1.0","CC-BY-2.0","CC-BY-2.5","CC-BY-2.5-AU","CC-BY-3.0","CC-BY-3.0-AT","CC-BY-3.0-AU","CC-BY-3.0-DE","CC-BY-3.0-IGO","CC-BY-3.0-NL","CC-BY-3.0-US","CC-BY-4.0","CC-BY-NC-1.0","CC-BY-NC-2.0","CC-BY-NC-2.5","CC-BY-NC-3.0","CC-BY-NC-3.0-DE","CC-BY-NC-4.0","CC-BY-NC-ND-1.0","CC-BY-NC-ND-2.0","CC-BY-NC-ND-2.5","CC-BY-NC-ND-3.0","CC-BY-NC-ND-3.0-DE","CC-BY-NC-ND-3.0-IGO","CC-BY-NC-ND-4.0","CC-BY-NC-SA-1.0","CC-BY-NC-SA-2.0","CC-BY-NC-SA-2.0-DE","CC-BY-NC-SA-2.0-FR","CC-BY-NC-SA-2.0-UK","CC-BY-NC-SA-2.5","CC-BY-NC-SA-3.0","CC-BY-NC-SA-3.0-DE","CC-BY-NC-SA-3.0-IGO","CC-BY-NC-SA-4.0","CC-BY-ND-1.0","CC-BY-ND-2.0","CC-BY-ND-2.5","CC-BY-ND-3.0","CC-BY-ND-3.0-DE","CC-BY-ND-4.0","CC-BY-SA-1.0","CC-BY-SA-2.0","CC-BY-SA-2.0-UK","CC-BY-SA-2.1-JP","CC-BY-SA-2.5","CC-BY-SA-3.0","CC-BY-SA-3.0-AT","CC-BY-SA-3.0-DE","CC-BY-SA-3.0-IGO","CC-BY-SA-4.0","CC-PDDC","CC0-1.0","CDDL-1.0","CDDL-1.1","CDL-1.0","CDLA-Permissive-1.0","CDLA-Permissive-2.0","CDLA-Sharing-1.0","CECILL-1.0","CECILL-1.1","CECILL-2.0","CECILL-2.1","CECILL-B","CECILL-C","CERN-OHL-1.1","CERN-OHL-1.2","CERN-OHL-P-2.0","CERN-OHL-S-2.0","CERN-OHL-W-2.0","CFITSIO","CMU-Mach","CMU-Mach-nodoc","CNRI-Jython","CNRI-Python","CNRI-Python-GPL-Compatible","COIL-1.0","CPAL-1.0","CPL-1.0","CPOL-1.02","CUA-OPL-1.0","Caldera","Caldera-no-preamble","Catharon","ClArtistic","Clips","Community-Spec-1.0","Condor-1.1","Cornell-Lossless-JPEG","Cronyx","Crossword","CrystalStacker","Cube","D-FSL-1.0","DEC-3-Clause","DL-DE-BY-2.0","DL-DE-ZERO-2.0","DOC","DRL-1.0","DRL-1.1","DSDP","DocBook-Schema","DocBook-XML","Dotseqn","ECL-1.0","ECL-2.0","EFL-1.0","EFL-2.0","EPICS","EPL-1.0","EPL-2.0","EUDatagrid","EUPL-1.0","EUPL-1.1","EUPL-1.2","Elastic-2.0","Entessa","ErlPL-1.1","Eurosym","FBM","FDK-AAC","FSFAP","FSFAP-no-warranty-disclaimer","FSFUL","FSFULLR","FSFULLRWD","FTL","Fair","Ferguson-Twofish","Frameworx-1.0","FreeBSD-DOC","FreeImage","Furuseth","GCR-docs","GD","GFDL-1.1-invariants-only","GFDL-1.1-invariants-or-later","GFDL-1.1-no-invariants-only","GFDL-1.1-no-invariants-or-later","GFDL-1.1-only","GFDL-1.1-or-later","GFDL-1.2-invariants-only","GFDL-1.2-invariants-or-later","GFDL-1.2-no-invariants-only","GFDL-1.2-no-invariants-or-later","GFDL-1.2-only","GFDL-1.2-or-later","GFDL-1.3-invariants-only","GFDL-1.3-invariants-or-later","GFDL-1.3-no-invariants-only","GFDL-1.3-no-invariants-or-later","GFDL-1.3-only","GFDL-1.3-or-later","GL2PS","GLWTPL","GPL-1.0-only","GPL-1.0-or-later","GPL-2.0-only","GPL-2.0-or-later","GPL-3.0-only","GPL-3.0-or-later","Giftware","Glide","Glulxe","Graphics-Gems","Gutmann","HIDAPI","HP-1986","HP-1989","HPND","HPND-DEC","HPND-Fenneberg-Livingston","HPND-INRIA-IMAG","HPND-Intel","HPND-Kevlin-Henney","HPND-MIT-disclaimer","HPND-Markus-Kuhn","HPND-Netrek","HPND-Pbmplus","HPND-UC","HPND-UC-export-US","HPND-doc","HPND-doc-sell","HPND-export-US","HPND-export-US-acknowledgement","HPND-export-US-modify","HPND-export2-US","HPND-merchantability-variant","HPND-sell-MIT-disclaimer-xserver","HPND-sell-regexpr","HPND-sell-variant","HPND-sell-variant-MIT-disclaimer","HPND-sell-variant-MIT-disclaimer-rev","HTMLTIDY","HaskellReport","Hippocratic-2.1","IBM-pibs","ICU","IEC-Code-Components-EULA","IJG","IJG-short","IPA","IPL-1.0","ISC","ISC-Veillard","ImageMagick","Imlib2","Info-ZIP","Inner-Net-2.0","Intel","Intel-ACPI","Interbase-1.0","JPL-image","JPNIC","JSON","Jam","JasPer-2.0","Kastrup","Kazlib","Knuth-CTAN","LAL-1.2","LAL-1.3","LGPL-2.0-only","LGPL-2.0-or-later","LGPL-2.1-only","LGPL-2.1-or-later","LGPL-3.0-only","LGPL-3.0-or-later","LGPLLR","LOOP","LPD-document","LPL-1.0","LPL-1.02","LPPL-1.0","LPPL-1.1","LPPL-1.2","LPPL-1.3a","LPPL-1.3c","LZMA-SDK-9.11-to-9.20","LZMA-SDK-9.22","Latex2e","Latex2e-translated-notice","Leptonica","LiLiQ-P-1.1","LiLiQ-R-1.1","LiLiQ-Rplus-1.1","Libpng","Linux-OpenIB","Linux-man-pages-1-para","Linux-man-pages-copyleft","Linux-man-pages-copyleft-2-para","Linux-man-pages-copyleft-var","Lucida-Bitmap-Fonts","MIT","MIT-0","MIT-CMU","MIT-Festival","MIT-Khronos-old","MIT-Modern-Variant","MIT-Wu","MIT-advertising","MIT-enna","MIT-feh","MIT-open-group","MIT-testregex","MITNFA","MMIXware","MPEG-SSG","MPL-1.0","MPL-1.1","MPL-2.0","MPL-2.0-no-copyleft-exception","MS-LPL","MS-PL","MS-RL","MTLL","Mackerras-3-Clause","Mackerras-3-Clause-acknowledgment","MakeIndex","Martin-Birgmeier","McPhee-slideshow","Minpack","MirOS","Motosoto","MulanPSL-1.0","MulanPSL-2.0","Multics","Mup","NAIST-2003","NASA-1.3","NBPL-1.0","NCBI-PD","NCGL-UK-2.0","NCL","NCSA","NGPL","NICTA-1.0","NIST-PD","NIST-PD-fallback","NIST-Software","NLOD-1.0","NLOD-2.0","NLPL","NOSL","NPL-1.0","NPL-1.1","NPOSL-3.0","NRL","NTP","NTP-0","Naumen","NetCDF","Newsletr","Nokia","Noweb","O-UDA-1.0","OAR","OCCT-PL","OCLC-2.0","ODC-By-1.0","ODbL-1.0","OFFIS","OFL-1.0","OFL-1.0-RFN","OFL-1.0-no-RFN","OFL-1.1","OFL-1.1-RFN","OFL-1.1-no-RFN","OGC-1.0","OGDL-Taiwan-1.0","OGL-Canada-2.0","OGL-UK-1.0","OGL-UK-2.0","OGL-UK-3.0","OGTSL","OLDAP-1.1","OLDAP-1.2","OLDAP-1.3","OLDAP-1.4","OLDAP-2.0","OLDAP-2.0.1","OLDAP-2.1","OLDAP-2.2","OLDAP-2.2.1","OLDAP-2.2.2","OLDAP-2.3","OLDAP-2.4","OLDAP-2.5","OLDAP-2.6","OLDAP-2.7","OLDAP-2.8","OLFL-1.3","OML","OPL-1.0","OPL-UK-3.0","OPUBL-1.0","OSET-PL-2.1","OSL-1.0","OSL-1.1","OSL-2.0","OSL-2.1","OSL-3.0","OpenPBS-2.3","OpenSSL","OpenSSL-standalone","OpenVision","PADL","PDDL-1.0","PHP-3.0","PHP-3.01","PPL","PSF-2.0","Parity-6.0.0","Parity-7.0.0","Pixar","Plexus","PolyForm-Noncommercial-1.0.0","PolyForm-Small-Business-1.0.0","PostgreSQL","Python-2.0","Python-2.0.1","QPL-1.0","QPL-1.0-INRIA-2004","Qhull","RHeCos-1.1","RPL-1.1","RPL-1.5","RPSL-1.0","RSA-MD","RSCPL","Rdisc","Ruby","Ruby-pty","SAX-PD","SAX-PD-2.0","SCEA","SGI-B-1.0","SGI-B-1.1","SGI-B-2.0","SGI-OpenGL","SGP4","SHL-0.5","SHL-0.51","SISSL","SISSL-1.2","SL","SMLNJ","SMPPL","SNIA","SPL-1.0","SSH-OpenSSH","SSH-short","SSLeay-standalone","SSPL-1.0","SWL","Saxpath","SchemeReport","Sendmail","Sendmail-8.23","SimPL-2.0","Sleepycat","Soundex","Spencer-86","Spencer-94","Spencer-99","SugarCRM-1.1.3","Sun-PPP","Sun-PPP-2000","SunPro","Symlinks","TAPR-OHL-1.0","TCL","TCP-wrappers","TGPPL-1.0","TMate","TORQUE-1.1","TOSL","TPDL","TPL-1.0","TTWL","TTYP0","TU-Berlin-1.0","TU-Berlin-2.0","TermReadKey","UCAR","UCL-1.0","UMich-Merit","UPL-1.0","URT-RLE","Ubuntu-font-1.0","Unicode-3.0","Unicode-DFS-2015","Unicode-DFS-2016","Unicode-TOU","UnixCrypt","Unlicense","VOSTROM","VSL-1.0","Vim","W3C","W3C-19980720","W3C-20150513","WTFPL","Watcom-1.0","Widget-Workshop","Wsuipa","X11","X11-distribute-modifications-variant","X11-swapped","XFree86-1.1","XSkat","Xdebug-1.03","Xerox","Xfig","Xnet","YPL-1.0","YPL-1.1","ZPL-1.1","ZPL-2.0","ZPL-2.1","Zed","Zeeff","Zend-2.0","Zimbra-1.3","Zimbra-1.4","Zlib","any-OSI","bcrypt-Solar-Designer","blessing","bzip2-1.0.6","check-cvs","checkmk","copyleft-next-0.3.0","copyleft-next-0.3.1","curl","cve-tou","diffmark","dtoa","dvipdfm","eGenix","etalab-2.0","fwlw","gSOAP-1.3b","gnuplot","gtkbook","hdparm","iMatix","libpng-2.0","libselinux-1.0","libtiff","libutil-David-Nugent","lsof","magaz","mailprio","metamail","mpi-permissive","mpich2","mplus","pkgconf","pnmstitch","psfrag","psutils","python-ldap","radvd","snprintf","softSurfer","ssh-keyscan","swrule","threeparttable","ulem","w3m","xinetd","xkeyboard-config-Zinoviev","xlock","xpp","xzoom","zlib-acknowledgement"]');
+
+/***/ }),
+
+/***/ 3958:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('[["AFL-1.1","AFL-1.2","AFL-2.0","AFL-2.1","AFL-3.0"],["AGPL-1.0",["AGPL-3.0","AGPL-3.0-only"]],["Apache-1.0","Apache-1.1","Apache-2.0"],["APSL-1.0","APSL-1.1","APSL-1.2","APSL-2.0"],["Artistic-1.0","Artistic-2.0"],["BitTorrent-1.0","BitTorrent-1.1"],["CC-BY-1.0","CC-BY-2.0","CC-BY-2.5","CC-BY-3.0","CC-BY-4.0"],["CC-BY-NC-1.0","CC-BY-NC-2.0","CC-BY-NC-2.5","CC-BY-NC-3.0","CC-BY-NC-4.0"],["CC-BY-NC-ND-1.0","CC-BY-NC-ND-2.0","CC-BY-NC-ND-2.5","CC-BY-NC-ND-3.0","CC-BY-NC-ND-4.0"],["CC-BY-NC-SA-1.0","CC-BY-NC-SA-2.0","CC-BY-NC-SA-2.5","CC-BY-NC-SA-3.0","CC-BY-NC-SA-4.0"],["CC-BY-ND-1.0","CC-BY-ND-2.0","CC-BY-ND-2.5","CC-BY-ND-3.0","CC-BY-ND-4.0"],["CC-BY-SA-1.0","CC-BY-SA-2.0","CC-BY-SA-2.5","CC-BY-SA-3.0","CC-BY-SA-4.0"],["CDDL-1.0","CDDL-1.1"],["CECILL-1.0","CECILL-1.1","CECILL-2.0"],["ECL-1.0","ECL-2.0"],["EFL-1.0","EFL-2.0"],["EPL-1.0","EPL-2.0"],["EUPL-1.0","EUPL-1.1"],[["GFDL-1.1","GFDL-1.1-only"],["GFDL-1.2","GFDL-1.2-only"],["GFDL-1.1-or-later","GFDL-1.2-or-later","GFDL-1.3","GFDL-1.3-only","GFDL-1.3-or-later"]],[["GPL-1.0","GPL-1.0-only"],["GPL-2.0","GPL-2.0-only"],["GPL-1.0-or-later","GPL-2.0-or-later","GPL-3.0","GPL-3.0-only","GPL-3.0-or-later"]],[["LGPL-2.0","LGPL-2.0-only"],["LGPL-2.1","LGPL-2.1-only"],["LGPL-2.0-or-later","LGPL-2.1-or-later","LGPL-3.0","LGPL-3.0-only","LGPL-3.0-or-later"]],["LPL-1.0","LPL-1.02"],["LPPL-1.0","LPPL-1.1","LPPL-1.2","LPPL-1.3a","LPPL-1.3c"],["MPL-1.0","MPL-1.1","MPL-2.0"],["MPL-1.0","MPL-1.1","MPL-2.0-no-copyleft-exception"],["NPL-1.0","NPL-1.1"],["OFL-1.0","OFL-1.1"],["OLDAP-1.1","OLDAP-1.2","OLDAP-1.3","OLDAP-1.4","OLDAP-2.0","OLDAP-2.0.1","OLDAP-2.1","OLDAP-2.2","OLDAP-2.2.1","OLDAP-2.2.2","OLDAP-2.3","OLDAP-2.4","OLDAP-2.5","OLDAP-2.6","OLDAP-2.7","OLDAP-2.8"],["OSL-1.0","OSL-1.1","OSL-2.0","OSL-2.1","OSL-3.0"],["PHP-3.0","PHP-3.01"],["RPL-1.1","RPL-1.5"],["SGI-B-1.0","SGI-B-1.1","SGI-B-2.0"],["YPL-1.0","YPL-1.1"],["ZPL-1.1","ZPL-2.0","ZPL-2.1"],["Zimbra-1.3","Zimbra-1.4"],["bzip2-1.0.5","bzip2-1.0.6"]]');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __nccwpck_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			id: moduleId,
+/******/ 			loaded: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		var threw = true;
+/******/ 		try {
+/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
+/******/ 			threw = false;
+/******/ 		} finally {
+/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
+/******/ 		}
+/******/ 	
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/node module decorator */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.nmd = (module) => {
+/******/ 			module.paths = [];
+/******/ 			if (!module.children) module.children = [];
+/******/ 			return module;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+
+// NAMESPACE OBJECT: ../../../node_modules/license-checker-rseidelsohn/lib/index.js
+var lib_namespaceObject = {};
+__nccwpck_require__.r(lib_namespaceObject);
+__nccwpck_require__.d(lib_namespaceObject, {
+  asCSV: () => (asCSV),
+  asFiles: () => (asFiles),
+  asMarkDown: () => (asMarkDown),
+  asPlainVertical: () => (asPlainVertical),
+  asSummary: () => (asSummary),
+  asTree: () => (asTree),
+  filterAttributes: () => (filterAttributes),
+  init: () => (init),
+  parseJson: () => (parseJson),
+  print: () => (print),
+  recursivelyCollectAllDependencies: () => (recursivelyCollectAllDependencies),
+  writeOutput: () => (writeOutput)
 });
 
+// EXTERNAL MODULE: ../../../node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(7930);
 // EXTERNAL MODULE: ../../../node_modules/chalk/source/index.js
 var source = __nccwpck_require__(483);
 // EXTERNAL MODULE: ../../../node_modules/debug/src/index.js
@@ -51979,149 +51927,143 @@ const writeOutput = (parsedArgs, foundLicensesJson) => {
 
 
 
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(9896);
+var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
+// EXTERNAL MODULE: external "path"
+var external_path_ = __nccwpck_require__(6928);
+var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
+;// CONCATENATED MODULE: ./src/checkLicenses.ts
+async function checkLicenses(licenseChecker, options, core) {
+    const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat, clarificationsPath } = options;
+    const licenseCheckerOptions = {
+        json: detailsOutputFormat === 'json',
+        csv: detailsOutputFormat === 'csv',
+        markdown: detailsOutputFormat === 'markdown',
+        plainVertical: detailsOutputFormat === 'plainVertical',
+        start: startPath,
+        production: dependencyType === 'production',
+        development: dependencyType === 'development',
+        out: detailsOutputPath,
+        onlyAllow,
+        customFormat: customFields,
+        excludePackages,
+        excludePackagesStartingWith,
+        clarificationsFile: clarificationsPath
+    };
+    core.info(`Start checking licenses with the following options:\n${JSON.stringify(licenseCheckerOptions)}`);
+    return new Promise((resolve, reject) => {
+        licenseChecker.init(licenseCheckerOptions, (err, packages) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(packages);
+            }
+        });
+    });
+}
 
-/***/ }),
+;// CONCATENATED MODULE: ./src/types.ts
+const DEPENDENCY_TYPES = ['production', 'development', 'all'];
+const DETAILS_OUTPUT_FORMATS = [
+    'json',
+    'csv',
+    'markdown',
+    'plainVertical'
+];
 
-/***/ 3922:
-/***/ ((module) => {
+;// CONCATENATED MODULE: ./src/run.ts
 
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"assert":true,"node:assert":[">= 14.18 && < 15",">= 16"],"assert/strict":">= 15","node:assert/strict":">= 16","async_hooks":">= 8","node:async_hooks":[">= 14.18 && < 15",">= 16"],"buffer_ieee754":">= 0.5 && < 0.9.7","buffer":true,"node:buffer":[">= 14.18 && < 15",">= 16"],"child_process":true,"node:child_process":[">= 14.18 && < 15",">= 16"],"cluster":">= 0.5","node:cluster":[">= 14.18 && < 15",">= 16"],"console":true,"node:console":[">= 14.18 && < 15",">= 16"],"constants":true,"node:constants":[">= 14.18 && < 15",">= 16"],"crypto":true,"node:crypto":[">= 14.18 && < 15",">= 16"],"_debug_agent":">= 1 && < 8","_debugger":"< 8","dgram":true,"node:dgram":[">= 14.18 && < 15",">= 16"],"diagnostics_channel":[">= 14.17 && < 15",">= 15.1"],"node:diagnostics_channel":[">= 14.18 && < 15",">= 16"],"dns":true,"node:dns":[">= 14.18 && < 15",">= 16"],"dns/promises":">= 15","node:dns/promises":">= 16","domain":">= 0.7.12","node:domain":[">= 14.18 && < 15",">= 16"],"events":true,"node:events":[">= 14.18 && < 15",">= 16"],"freelist":"< 6","fs":true,"node:fs":[">= 14.18 && < 15",">= 16"],"fs/promises":[">= 10 && < 10.1",">= 14"],"node:fs/promises":[">= 14.18 && < 15",">= 16"],"_http_agent":">= 0.11.1","node:_http_agent":[">= 14.18 && < 15",">= 16"],"_http_client":">= 0.11.1","node:_http_client":[">= 14.18 && < 15",">= 16"],"_http_common":">= 0.11.1","node:_http_common":[">= 14.18 && < 15",">= 16"],"_http_incoming":">= 0.11.1","node:_http_incoming":[">= 14.18 && < 15",">= 16"],"_http_outgoing":">= 0.11.1","node:_http_outgoing":[">= 14.18 && < 15",">= 16"],"_http_server":">= 0.11.1","node:_http_server":[">= 14.18 && < 15",">= 16"],"http":true,"node:http":[">= 14.18 && < 15",">= 16"],"http2":">= 8.8","node:http2":[">= 14.18 && < 15",">= 16"],"https":true,"node:https":[">= 14.18 && < 15",">= 16"],"inspector":">= 8","node:inspector":[">= 14.18 && < 15",">= 16"],"inspector/promises":[">= 19"],"node:inspector/promises":[">= 19"],"_linklist":"< 8","module":true,"node:module":[">= 14.18 && < 15",">= 16"],"net":true,"node:net":[">= 14.18 && < 15",">= 16"],"node-inspect/lib/_inspect":">= 7.6 && < 12","node-inspect/lib/internal/inspect_client":">= 7.6 && < 12","node-inspect/lib/internal/inspect_repl":">= 7.6 && < 12","os":true,"node:os":[">= 14.18 && < 15",">= 16"],"path":true,"node:path":[">= 14.18 && < 15",">= 16"],"path/posix":">= 15.3","node:path/posix":">= 16","path/win32":">= 15.3","node:path/win32":">= 16","perf_hooks":">= 8.5","node:perf_hooks":[">= 14.18 && < 15",">= 16"],"process":">= 1","node:process":[">= 14.18 && < 15",">= 16"],"punycode":">= 0.5","node:punycode":[">= 14.18 && < 15",">= 16"],"querystring":true,"node:querystring":[">= 14.18 && < 15",">= 16"],"readline":true,"node:readline":[">= 14.18 && < 15",">= 16"],"readline/promises":">= 17","node:readline/promises":">= 17","repl":true,"node:repl":[">= 14.18 && < 15",">= 16"],"node:sea":[">= 20.12 && < 21",">= 21.7"],"smalloc":">= 0.11.5 && < 3","node:sqlite":[">= 22.13 && < 23",">= 23.4"],"_stream_duplex":">= 0.9.4","node:_stream_duplex":[">= 14.18 && < 15",">= 16"],"_stream_transform":">= 0.9.4","node:_stream_transform":[">= 14.18 && < 15",">= 16"],"_stream_wrap":">= 1.4.1","node:_stream_wrap":[">= 14.18 && < 15",">= 16"],"_stream_passthrough":">= 0.9.4","node:_stream_passthrough":[">= 14.18 && < 15",">= 16"],"_stream_readable":">= 0.9.4","node:_stream_readable":[">= 14.18 && < 15",">= 16"],"_stream_writable":">= 0.9.4","node:_stream_writable":[">= 14.18 && < 15",">= 16"],"stream":true,"node:stream":[">= 14.18 && < 15",">= 16"],"stream/consumers":">= 16.7","node:stream/consumers":">= 16.7","stream/promises":">= 15","node:stream/promises":">= 16","stream/web":">= 16.5","node:stream/web":">= 16.5","string_decoder":true,"node:string_decoder":[">= 14.18 && < 15",">= 16"],"sys":[">= 0.4 && < 0.7",">= 0.8"],"node:sys":[">= 14.18 && < 15",">= 16"],"test/reporters":">= 19.9 && < 20.2","node:test/reporters":[">= 18.17 && < 19",">= 19.9",">= 20"],"test/mock_loader":">= 22.3 && < 22.7","node:test/mock_loader":">= 22.3 && < 22.7","node:test":[">= 16.17 && < 17",">= 18"],"timers":true,"node:timers":[">= 14.18 && < 15",">= 16"],"timers/promises":">= 15","node:timers/promises":">= 16","_tls_common":">= 0.11.13","node:_tls_common":[">= 14.18 && < 15",">= 16"],"_tls_legacy":">= 0.11.3 && < 10","_tls_wrap":">= 0.11.3","node:_tls_wrap":[">= 14.18 && < 15",">= 16"],"tls":true,"node:tls":[">= 14.18 && < 15",">= 16"],"trace_events":">= 10","node:trace_events":[">= 14.18 && < 15",">= 16"],"tty":true,"node:tty":[">= 14.18 && < 15",">= 16"],"url":true,"node:url":[">= 14.18 && < 15",">= 16"],"util":true,"node:util":[">= 14.18 && < 15",">= 16"],"util/types":">= 15.3","node:util/types":">= 16","v8/tools/arguments":">= 10 && < 12","v8/tools/codemap":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/consarray":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/csvparser":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/logreader":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/profile_view":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8/tools/splaytree":[">= 4.4 && < 5",">= 5.2 && < 12"],"v8":">= 1","node:v8":[">= 14.18 && < 15",">= 16"],"vm":true,"node:vm":[">= 14.18 && < 15",">= 16"],"wasi":[">= 13.4 && < 13.5",">= 18.17 && < 19",">= 20"],"node:wasi":[">= 18.17 && < 19",">= 20"],"worker_threads":">= 11.7","node:worker_threads":[">= 14.18 && < 15",">= 16"],"zlib":">= 0.5","node:zlib":[">= 14.18 && < 15",">= 16"]}');
 
-/***/ }),
 
-/***/ 5298:
-/***/ ((module) => {
 
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"topLevel":{"dependancies":"dependencies","dependecies":"dependencies","depdenencies":"dependencies","devEependencies":"devDependencies","depends":"dependencies","dev-dependencies":"devDependencies","devDependences":"devDependencies","devDepenencies":"devDependencies","devdependencies":"devDependencies","repostitory":"repository","repo":"repository","prefereGlobal":"preferGlobal","hompage":"homepage","hampage":"homepage","autohr":"author","autor":"author","contributers":"contributors","publicationConfig":"publishConfig","script":"scripts"},"bugs":{"web":"url","name":"url"},"script":{"server":"start","tests":"test"}}');
+async function run({ core, licenseChecker }) {
+    try {
+        const dependencyType = core.getInput('dependency-type');
+        const startPath = core.getInput('start-path');
+        const customFieldsPath = core.getInput('custom-fields-path');
+        const clarificationsPath = core.getInput('clarifications-path');
+        const onlyAllow = core.getInput('only-allow');
+        const detailsOutputPath = core.getInput('details-output-path');
+        const detailsOutputFormat = core.getInput('details-output-format');
+        const excludePackages = core.getInput('exclude-packages');
+        const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with');
+        if (!DEPENDENCY_TYPES.includes(dependencyType)) {
+            core.setFailed(`Invalid dependency-type: ${dependencyType}. Allowed values are: ${DEPENDENCY_TYPES.join(', ')}`);
+            return;
+        }
+        if (!DETAILS_OUTPUT_FORMATS.includes(detailsOutputFormat)) {
+            core.setFailed(`Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${DETAILS_OUTPUT_FORMATS.join(', ')}`);
+            return;
+        }
+        if (!external_fs_default().existsSync(external_path_default().resolve(startPath))) {
+            core.setFailed(`The file specified by start-path does not exist: ${startPath}`);
+            return;
+        }
+        if (customFieldsPath && !external_fs_default().existsSync(external_path_default().resolve(customFieldsPath))) {
+            core.setFailed(`The file specified by custom-fields-path does not exist: ${customFieldsPath}`);
+            return;
+        }
+        if (clarificationsPath &&
+            !external_fs_default().existsSync(external_path_default().resolve(clarificationsPath))) {
+            core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
+        }
+        let customFields = {
+            name: '',
+            version: '',
+            licenses: '',
+            licenseText: ''
+        };
+        if (customFieldsPath) {
+            core.info(`Provided custom fields path "${customFieldsPath}", reading custom fields...`);
+            try {
+                const customFieldsContent = external_fs_default().readFileSync(external_path_default().resolve(customFieldsPath), 'utf8');
+                customFields = JSON.parse(customFieldsContent);
+                core.info(`Custom fields: ${customFieldsContent}`);
+            }
+            catch (error) {
+                core.setFailed(`Error reading or parsing customFieldsPath: ${error.message}`);
+                return;
+            }
+        }
+        const options = {
+            startPath,
+            dependencyType,
+            customFields,
+            onlyAllow,
+            detailsOutputPath,
+            detailsOutputFormat,
+            ...(excludePackages.trim().length && { excludePackages }),
+            ...(excludePackagesStartingWith.trim().length && {
+                excludePackagesStartingWith
+            }),
+            ...(clarificationsPath.trim().length && { clarificationsPath })
+        };
+        core.info(`Provided options:\n${JSON.stringify(options)}`);
+        const result = await checkLicenses(licenseChecker, options, core);
+        const licenseCheckerSummary = licenseChecker.asSummary(result);
+        const hasLicenseCheckerSummary = !!licenseCheckerSummary.length;
+        if (hasLicenseCheckerSummary) {
+            core.info(`License checker summary:\n${licenseCheckerSummary}`);
+        }
+        else {
+            throw new Error('No licenses found');
+        }
+    }
+    catch (error) {
+        core.setFailed(`Error checking licenses: ${error.message}`);
+    }
+}
 
-/***/ }),
+;// CONCATENATED MODULE: ./src/index.ts
 
-/***/ 5977:
-/***/ ((module) => {
 
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"repositories":"\'repositories\' (plural) Not supported. Please pick one as the \'repository\' field","missingRepository":"No repository field.","brokenGitUrl":"Probably broken git url: %s","nonObjectScripts":"scripts must be an object","nonStringScript":"script values must be string commands","nonArrayFiles":"Invalid \'files\' member","invalidFilename":"Invalid filename in \'files\' list: %s","nonArrayBundleDependencies":"Invalid \'bundleDependencies\' list. Must be array of package names","nonStringBundleDependency":"Invalid bundleDependencies member: %s","nonDependencyBundleDependency":"Non-dependency in bundleDependencies: %s","nonObjectDependencies":"%s field must be an object","nonStringDependency":"Invalid dependency: %s %s","deprecatedArrayDependencies":"specifying %s as array is deprecated","deprecatedModules":"modules field is deprecated","nonArrayKeywords":"keywords should be an array of strings","nonStringKeyword":"keywords should be an array of strings","conflictingName":"%s is also the name of a node core module.","nonStringDescription":"\'description\' field should be a string","missingDescription":"No description","missingReadme":"No README data","missingLicense":"No license field.","nonEmailUrlBugsString":"Bug string field must be url, email, or {email,url}","nonUrlBugsUrlField":"bugs.url field must be a string url. Deleted.","nonEmailBugsEmailField":"bugs.email field must be a string email. Deleted.","emptyNormalizedBugs":"Normalized value of bugs field is an empty object. Deleted.","nonUrlHomepage":"homepage field must be a string url. Deleted.","invalidLicense":"license should be a valid SPDX license expression","typo":"%s should probably be %s."}');
 
-/***/ }),
+run({ core: core, licenseChecker: lib_namespaceObject });
 
-/***/ 3290:
-/***/ ((module) => {
+})();
 
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('["389-exception","Asterisk-exception","Autoconf-exception-2.0","Autoconf-exception-3.0","Autoconf-exception-generic","Autoconf-exception-generic-3.0","Autoconf-exception-macro","Bison-exception-1.24","Bison-exception-2.2","Bootloader-exception","Classpath-exception-2.0","CLISP-exception-2.0","cryptsetup-OpenSSL-exception","DigiRule-FOSS-exception","eCos-exception-2.0","Fawkes-Runtime-exception","FLTK-exception","fmt-exception","Font-exception-2.0","freertos-exception-2.0","GCC-exception-2.0","GCC-exception-2.0-note","GCC-exception-3.1","Gmsh-exception","GNAT-exception","GNOME-examples-exception","GNU-compiler-exception","gnu-javamail-exception","GPL-3.0-interface-exception","GPL-3.0-linking-exception","GPL-3.0-linking-source-exception","GPL-CC-1.0","GStreamer-exception-2005","GStreamer-exception-2008","i2p-gpl-java-exception","KiCad-libraries-exception","LGPL-3.0-linking-exception","libpri-OpenH323-exception","Libtool-exception","Linux-syscall-note","LLGPL","LLVM-exception","LZMA-exception","mif-exception","OCaml-LGPL-linking-exception","OCCT-exception-1.0","OpenJDK-assembly-exception-1.0","openvpn-openssl-exception","PS-or-PDF-font-exception-20170817","QPL-1.0-INRIA-2004-exception","Qt-GPL-exception-1.0","Qt-LGPL-exception-1.1","Qwt-exception-1.0","SANE-exception","SHL-2.0","SHL-2.1","stunnel-exception","SWI-exception","Swift-exception","Texinfo-exception","u-boot-exception-2.0","UBDL-exception","Universal-FOSS-exception-1.0","vsftpd-openssl-exception","WxWindows-exception-3.1","x11vnc-openssl-exception"]');
-
-/***/ }),
-
-/***/ 6127:
-/***/ ((module) => {
-
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('["AGPL-1.0","AGPL-3.0","BSD-2-Clause-FreeBSD","BSD-2-Clause-NetBSD","GFDL-1.1","GFDL-1.2","GFDL-1.3","GPL-1.0","GPL-2.0","GPL-2.0-with-GCC-exception","GPL-2.0-with-autoconf-exception","GPL-2.0-with-bison-exception","GPL-2.0-with-classpath-exception","GPL-2.0-with-font-exception","GPL-3.0","GPL-3.0-with-GCC-exception","GPL-3.0-with-autoconf-exception","LGPL-2.0","LGPL-2.1","LGPL-3.0","Net-SNMP","Nunit","StandardML-NJ","bzip2-1.0.5","eCos-2.0","wxWindows"]');
-
-/***/ }),
-
-/***/ 6374:
-/***/ ((module) => {
-
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('["0BSD","3D-Slicer-1.0","AAL","ADSL","AFL-1.1","AFL-1.2","AFL-2.0","AFL-2.1","AFL-3.0","AGPL-1.0-only","AGPL-1.0-or-later","AGPL-3.0-only","AGPL-3.0-or-later","AMD-newlib","AMDPLPA","AML","AML-glslang","AMPAS","ANTLR-PD","ANTLR-PD-fallback","APAFML","APL-1.0","APSL-1.0","APSL-1.1","APSL-1.2","APSL-2.0","ASWF-Digital-Assets-1.0","ASWF-Digital-Assets-1.1","Abstyles","AdaCore-doc","Adobe-2006","Adobe-Display-PostScript","Adobe-Glyph","Adobe-Utopia","Afmparse","Aladdin","Apache-1.0","Apache-1.1","Apache-2.0","App-s2p","Arphic-1999","Artistic-1.0","Artistic-1.0-Perl","Artistic-1.0-cl8","Artistic-2.0","BSD-1-Clause","BSD-2-Clause","BSD-2-Clause-Darwin","BSD-2-Clause-Patent","BSD-2-Clause-Views","BSD-2-Clause-first-lines","BSD-3-Clause","BSD-3-Clause-Attribution","BSD-3-Clause-Clear","BSD-3-Clause-HP","BSD-3-Clause-LBNL","BSD-3-Clause-Modification","BSD-3-Clause-No-Military-License","BSD-3-Clause-No-Nuclear-License","BSD-3-Clause-No-Nuclear-License-2014","BSD-3-Clause-No-Nuclear-Warranty","BSD-3-Clause-Open-MPI","BSD-3-Clause-Sun","BSD-3-Clause-acpica","BSD-3-Clause-flex","BSD-4-Clause","BSD-4-Clause-Shortened","BSD-4-Clause-UC","BSD-4.3RENO","BSD-4.3TAHOE","BSD-Advertising-Acknowledgement","BSD-Attribution-HPND-disclaimer","BSD-Inferno-Nettverk","BSD-Protection","BSD-Source-Code","BSD-Source-beginning-file","BSD-Systemics","BSD-Systemics-W3Works","BSL-1.0","BUSL-1.1","Baekmuk","Bahyph","Barr","Beerware","BitTorrent-1.0","BitTorrent-1.1","Bitstream-Charter","Bitstream-Vera","BlueOak-1.0.0","Boehm-GC","Borceux","Brian-Gladman-2-Clause","Brian-Gladman-3-Clause","C-UDA-1.0","CAL-1.0","CAL-1.0-Combined-Work-Exception","CATOSL-1.1","CC-BY-1.0","CC-BY-2.0","CC-BY-2.5","CC-BY-2.5-AU","CC-BY-3.0","CC-BY-3.0-AT","CC-BY-3.0-AU","CC-BY-3.0-DE","CC-BY-3.0-IGO","CC-BY-3.0-NL","CC-BY-3.0-US","CC-BY-4.0","CC-BY-NC-1.0","CC-BY-NC-2.0","CC-BY-NC-2.5","CC-BY-NC-3.0","CC-BY-NC-3.0-DE","CC-BY-NC-4.0","CC-BY-NC-ND-1.0","CC-BY-NC-ND-2.0","CC-BY-NC-ND-2.5","CC-BY-NC-ND-3.0","CC-BY-NC-ND-3.0-DE","CC-BY-NC-ND-3.0-IGO","CC-BY-NC-ND-4.0","CC-BY-NC-SA-1.0","CC-BY-NC-SA-2.0","CC-BY-NC-SA-2.0-DE","CC-BY-NC-SA-2.0-FR","CC-BY-NC-SA-2.0-UK","CC-BY-NC-SA-2.5","CC-BY-NC-SA-3.0","CC-BY-NC-SA-3.0-DE","CC-BY-NC-SA-3.0-IGO","CC-BY-NC-SA-4.0","CC-BY-ND-1.0","CC-BY-ND-2.0","CC-BY-ND-2.5","CC-BY-ND-3.0","CC-BY-ND-3.0-DE","CC-BY-ND-4.0","CC-BY-SA-1.0","CC-BY-SA-2.0","CC-BY-SA-2.0-UK","CC-BY-SA-2.1-JP","CC-BY-SA-2.5","CC-BY-SA-3.0","CC-BY-SA-3.0-AT","CC-BY-SA-3.0-DE","CC-BY-SA-3.0-IGO","CC-BY-SA-4.0","CC-PDDC","CC0-1.0","CDDL-1.0","CDDL-1.1","CDL-1.0","CDLA-Permissive-1.0","CDLA-Permissive-2.0","CDLA-Sharing-1.0","CECILL-1.0","CECILL-1.1","CECILL-2.0","CECILL-2.1","CECILL-B","CECILL-C","CERN-OHL-1.1","CERN-OHL-1.2","CERN-OHL-P-2.0","CERN-OHL-S-2.0","CERN-OHL-W-2.0","CFITSIO","CMU-Mach","CMU-Mach-nodoc","CNRI-Jython","CNRI-Python","CNRI-Python-GPL-Compatible","COIL-1.0","CPAL-1.0","CPL-1.0","CPOL-1.02","CUA-OPL-1.0","Caldera","Caldera-no-preamble","Catharon","ClArtistic","Clips","Community-Spec-1.0","Condor-1.1","Cornell-Lossless-JPEG","Cronyx","Crossword","CrystalStacker","Cube","D-FSL-1.0","DEC-3-Clause","DL-DE-BY-2.0","DL-DE-ZERO-2.0","DOC","DRL-1.0","DRL-1.1","DSDP","DocBook-Schema","DocBook-XML","Dotseqn","ECL-1.0","ECL-2.0","EFL-1.0","EFL-2.0","EPICS","EPL-1.0","EPL-2.0","EUDatagrid","EUPL-1.0","EUPL-1.1","EUPL-1.2","Elastic-2.0","Entessa","ErlPL-1.1","Eurosym","FBM","FDK-AAC","FSFAP","FSFAP-no-warranty-disclaimer","FSFUL","FSFULLR","FSFULLRWD","FTL","Fair","Ferguson-Twofish","Frameworx-1.0","FreeBSD-DOC","FreeImage","Furuseth","GCR-docs","GD","GFDL-1.1-invariants-only","GFDL-1.1-invariants-or-later","GFDL-1.1-no-invariants-only","GFDL-1.1-no-invariants-or-later","GFDL-1.1-only","GFDL-1.1-or-later","GFDL-1.2-invariants-only","GFDL-1.2-invariants-or-later","GFDL-1.2-no-invariants-only","GFDL-1.2-no-invariants-or-later","GFDL-1.2-only","GFDL-1.2-or-later","GFDL-1.3-invariants-only","GFDL-1.3-invariants-or-later","GFDL-1.3-no-invariants-only","GFDL-1.3-no-invariants-or-later","GFDL-1.3-only","GFDL-1.3-or-later","GL2PS","GLWTPL","GPL-1.0-only","GPL-1.0-or-later","GPL-2.0-only","GPL-2.0-or-later","GPL-3.0-only","GPL-3.0-or-later","Giftware","Glide","Glulxe","Graphics-Gems","Gutmann","HIDAPI","HP-1986","HP-1989","HPND","HPND-DEC","HPND-Fenneberg-Livingston","HPND-INRIA-IMAG","HPND-Intel","HPND-Kevlin-Henney","HPND-MIT-disclaimer","HPND-Markus-Kuhn","HPND-Netrek","HPND-Pbmplus","HPND-UC","HPND-UC-export-US","HPND-doc","HPND-doc-sell","HPND-export-US","HPND-export-US-acknowledgement","HPND-export-US-modify","HPND-export2-US","HPND-merchantability-variant","HPND-sell-MIT-disclaimer-xserver","HPND-sell-regexpr","HPND-sell-variant","HPND-sell-variant-MIT-disclaimer","HPND-sell-variant-MIT-disclaimer-rev","HTMLTIDY","HaskellReport","Hippocratic-2.1","IBM-pibs","ICU","IEC-Code-Components-EULA","IJG","IJG-short","IPA","IPL-1.0","ISC","ISC-Veillard","ImageMagick","Imlib2","Info-ZIP","Inner-Net-2.0","Intel","Intel-ACPI","Interbase-1.0","JPL-image","JPNIC","JSON","Jam","JasPer-2.0","Kastrup","Kazlib","Knuth-CTAN","LAL-1.2","LAL-1.3","LGPL-2.0-only","LGPL-2.0-or-later","LGPL-2.1-only","LGPL-2.1-or-later","LGPL-3.0-only","LGPL-3.0-or-later","LGPLLR","LOOP","LPD-document","LPL-1.0","LPL-1.02","LPPL-1.0","LPPL-1.1","LPPL-1.2","LPPL-1.3a","LPPL-1.3c","LZMA-SDK-9.11-to-9.20","LZMA-SDK-9.22","Latex2e","Latex2e-translated-notice","Leptonica","LiLiQ-P-1.1","LiLiQ-R-1.1","LiLiQ-Rplus-1.1","Libpng","Linux-OpenIB","Linux-man-pages-1-para","Linux-man-pages-copyleft","Linux-man-pages-copyleft-2-para","Linux-man-pages-copyleft-var","Lucida-Bitmap-Fonts","MIT","MIT-0","MIT-CMU","MIT-Festival","MIT-Khronos-old","MIT-Modern-Variant","MIT-Wu","MIT-advertising","MIT-enna","MIT-feh","MIT-open-group","MIT-testregex","MITNFA","MMIXware","MPEG-SSG","MPL-1.0","MPL-1.1","MPL-2.0","MPL-2.0-no-copyleft-exception","MS-LPL","MS-PL","MS-RL","MTLL","Mackerras-3-Clause","Mackerras-3-Clause-acknowledgment","MakeIndex","Martin-Birgmeier","McPhee-slideshow","Minpack","MirOS","Motosoto","MulanPSL-1.0","MulanPSL-2.0","Multics","Mup","NAIST-2003","NASA-1.3","NBPL-1.0","NCBI-PD","NCGL-UK-2.0","NCL","NCSA","NGPL","NICTA-1.0","NIST-PD","NIST-PD-fallback","NIST-Software","NLOD-1.0","NLOD-2.0","NLPL","NOSL","NPL-1.0","NPL-1.1","NPOSL-3.0","NRL","NTP","NTP-0","Naumen","NetCDF","Newsletr","Nokia","Noweb","O-UDA-1.0","OAR","OCCT-PL","OCLC-2.0","ODC-By-1.0","ODbL-1.0","OFFIS","OFL-1.0","OFL-1.0-RFN","OFL-1.0-no-RFN","OFL-1.1","OFL-1.1-RFN","OFL-1.1-no-RFN","OGC-1.0","OGDL-Taiwan-1.0","OGL-Canada-2.0","OGL-UK-1.0","OGL-UK-2.0","OGL-UK-3.0","OGTSL","OLDAP-1.1","OLDAP-1.2","OLDAP-1.3","OLDAP-1.4","OLDAP-2.0","OLDAP-2.0.1","OLDAP-2.1","OLDAP-2.2","OLDAP-2.2.1","OLDAP-2.2.2","OLDAP-2.3","OLDAP-2.4","OLDAP-2.5","OLDAP-2.6","OLDAP-2.7","OLDAP-2.8","OLFL-1.3","OML","OPL-1.0","OPL-UK-3.0","OPUBL-1.0","OSET-PL-2.1","OSL-1.0","OSL-1.1","OSL-2.0","OSL-2.1","OSL-3.0","OpenPBS-2.3","OpenSSL","OpenSSL-standalone","OpenVision","PADL","PDDL-1.0","PHP-3.0","PHP-3.01","PPL","PSF-2.0","Parity-6.0.0","Parity-7.0.0","Pixar","Plexus","PolyForm-Noncommercial-1.0.0","PolyForm-Small-Business-1.0.0","PostgreSQL","Python-2.0","Python-2.0.1","QPL-1.0","QPL-1.0-INRIA-2004","Qhull","RHeCos-1.1","RPL-1.1","RPL-1.5","RPSL-1.0","RSA-MD","RSCPL","Rdisc","Ruby","Ruby-pty","SAX-PD","SAX-PD-2.0","SCEA","SGI-B-1.0","SGI-B-1.1","SGI-B-2.0","SGI-OpenGL","SGP4","SHL-0.5","SHL-0.51","SISSL","SISSL-1.2","SL","SMLNJ","SMPPL","SNIA","SPL-1.0","SSH-OpenSSH","SSH-short","SSLeay-standalone","SSPL-1.0","SWL","Saxpath","SchemeReport","Sendmail","Sendmail-8.23","SimPL-2.0","Sleepycat","Soundex","Spencer-86","Spencer-94","Spencer-99","SugarCRM-1.1.3","Sun-PPP","Sun-PPP-2000","SunPro","Symlinks","TAPR-OHL-1.0","TCL","TCP-wrappers","TGPPL-1.0","TMate","TORQUE-1.1","TOSL","TPDL","TPL-1.0","TTWL","TTYP0","TU-Berlin-1.0","TU-Berlin-2.0","TermReadKey","UCAR","UCL-1.0","UMich-Merit","UPL-1.0","URT-RLE","Ubuntu-font-1.0","Unicode-3.0","Unicode-DFS-2015","Unicode-DFS-2016","Unicode-TOU","UnixCrypt","Unlicense","VOSTROM","VSL-1.0","Vim","W3C","W3C-19980720","W3C-20150513","WTFPL","Watcom-1.0","Widget-Workshop","Wsuipa","X11","X11-distribute-modifications-variant","X11-swapped","XFree86-1.1","XSkat","Xdebug-1.03","Xerox","Xfig","Xnet","YPL-1.0","YPL-1.1","ZPL-1.1","ZPL-2.0","ZPL-2.1","Zed","Zeeff","Zend-2.0","Zimbra-1.3","Zimbra-1.4","Zlib","any-OSI","bcrypt-Solar-Designer","blessing","bzip2-1.0.6","check-cvs","checkmk","copyleft-next-0.3.0","copyleft-next-0.3.1","curl","cve-tou","diffmark","dtoa","dvipdfm","eGenix","etalab-2.0","fwlw","gSOAP-1.3b","gnuplot","gtkbook","hdparm","iMatix","libpng-2.0","libselinux-1.0","libtiff","libutil-David-Nugent","lsof","magaz","mailprio","metamail","mpi-permissive","mpich2","mplus","pkgconf","pnmstitch","psfrag","psutils","python-ldap","radvd","snprintf","softSurfer","ssh-keyscan","swrule","threeparttable","ulem","w3m","xinetd","xkeyboard-config-Zinoviev","xlock","xpp","xzoom","zlib-acknowledgement"]');
-
-/***/ }),
-
-/***/ 3958:
-/***/ ((module) => {
-
-"use strict";
-module.exports = /*#__PURE__*/JSON.parse('[["AFL-1.1","AFL-1.2","AFL-2.0","AFL-2.1","AFL-3.0"],["AGPL-1.0",["AGPL-3.0","AGPL-3.0-only"]],["Apache-1.0","Apache-1.1","Apache-2.0"],["APSL-1.0","APSL-1.1","APSL-1.2","APSL-2.0"],["Artistic-1.0","Artistic-2.0"],["BitTorrent-1.0","BitTorrent-1.1"],["CC-BY-1.0","CC-BY-2.0","CC-BY-2.5","CC-BY-3.0","CC-BY-4.0"],["CC-BY-NC-1.0","CC-BY-NC-2.0","CC-BY-NC-2.5","CC-BY-NC-3.0","CC-BY-NC-4.0"],["CC-BY-NC-ND-1.0","CC-BY-NC-ND-2.0","CC-BY-NC-ND-2.5","CC-BY-NC-ND-3.0","CC-BY-NC-ND-4.0"],["CC-BY-NC-SA-1.0","CC-BY-NC-SA-2.0","CC-BY-NC-SA-2.5","CC-BY-NC-SA-3.0","CC-BY-NC-SA-4.0"],["CC-BY-ND-1.0","CC-BY-ND-2.0","CC-BY-ND-2.5","CC-BY-ND-3.0","CC-BY-ND-4.0"],["CC-BY-SA-1.0","CC-BY-SA-2.0","CC-BY-SA-2.5","CC-BY-SA-3.0","CC-BY-SA-4.0"],["CDDL-1.0","CDDL-1.1"],["CECILL-1.0","CECILL-1.1","CECILL-2.0"],["ECL-1.0","ECL-2.0"],["EFL-1.0","EFL-2.0"],["EPL-1.0","EPL-2.0"],["EUPL-1.0","EUPL-1.1"],[["GFDL-1.1","GFDL-1.1-only"],["GFDL-1.2","GFDL-1.2-only"],["GFDL-1.1-or-later","GFDL-1.2-or-later","GFDL-1.3","GFDL-1.3-only","GFDL-1.3-or-later"]],[["GPL-1.0","GPL-1.0-only"],["GPL-2.0","GPL-2.0-only"],["GPL-1.0-or-later","GPL-2.0-or-later","GPL-3.0","GPL-3.0-only","GPL-3.0-or-later"]],[["LGPL-2.0","LGPL-2.0-only"],["LGPL-2.1","LGPL-2.1-only"],["LGPL-2.0-or-later","LGPL-2.1-or-later","LGPL-3.0","LGPL-3.0-only","LGPL-3.0-or-later"]],["LPL-1.0","LPL-1.02"],["LPPL-1.0","LPPL-1.1","LPPL-1.2","LPPL-1.3a","LPPL-1.3c"],["MPL-1.0","MPL-1.1","MPL-2.0"],["MPL-1.0","MPL-1.1","MPL-2.0-no-copyleft-exception"],["NPL-1.0","NPL-1.1"],["OFL-1.0","OFL-1.1"],["OLDAP-1.1","OLDAP-1.2","OLDAP-1.3","OLDAP-1.4","OLDAP-2.0","OLDAP-2.0.1","OLDAP-2.1","OLDAP-2.2","OLDAP-2.2.1","OLDAP-2.2.2","OLDAP-2.3","OLDAP-2.4","OLDAP-2.5","OLDAP-2.6","OLDAP-2.7","OLDAP-2.8"],["OSL-1.0","OSL-1.1","OSL-2.0","OSL-2.1","OSL-3.0"],["PHP-3.0","PHP-3.01"],["RPL-1.1","RPL-1.5"],["SGI-B-1.0","SGI-B-1.1","SGI-B-2.0"],["YPL-1.0","YPL-1.1"],["ZPL-1.1","ZPL-2.0","ZPL-2.1"],["Zimbra-1.3","Zimbra-1.4"],["bzip2-1.0.5","bzip2-1.0.6"]]');
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __nccwpck_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		var threw = true;
-/******/ 		try {
-/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
-/******/ 			threw = false;
-/******/ 		} finally {
-/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
-/******/ 		}
-/******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
-/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/ 	
-/************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(1719);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+module.exports = __webpack_exports__;
 /******/ })()
 ;

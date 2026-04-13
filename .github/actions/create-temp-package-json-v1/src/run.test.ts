@@ -1,8 +1,7 @@
-import 'mocha'
 import sinon from 'sinon'
 import { assert } from 'chai'
-import run from './run'
-import type { Core, FileSystem } from './types'
+import run from './run.ts'
+import type { Core, FileSystem } from './types.ts'
 
 describe('run', () => {
   let core: Core

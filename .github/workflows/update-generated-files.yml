@@ -24,7 +24,7 @@ jobs:
       - name: Build
         run: |
           npm ci
-          npm run build -ws
+          npm run build --workspaces
 
       - name: Check for changes
         id: changes

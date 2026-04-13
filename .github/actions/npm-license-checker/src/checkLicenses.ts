@@ -1,12 +1,10 @@
-import {
+import type {
   CheckLicensesOptions,
   Core,
-  DependencyType,
-  DetailsOutputFormat,
   LicenseChecker,
   ModuleInfos
-} from './types'
-import { InitOpts } from 'license-checker-rseidelsohn'
+} from './types.ts'
+import type { InitOpts } from 'license-checker-rseidelsohn'
 
 export default async function checkLicenses(
   licenseChecker: LicenseChecker,
@@ -26,14 +24,14 @@ export default async function checkLicenses(
   } = options
 
   const licenseCheckerOptions: InitOpts = {
-    json: detailsOutputFormat === DetailsOutputFormat.JSON,
-    csv: detailsOutputFormat === DetailsOutputFormat.CSV,
+    json: detailsOutputFormat === 'json',
+    csv: detailsOutputFormat === 'csv',
     // @ts-expect-error The markdown option is not typed in license-checker-rseidelsohn
-    markdown: detailsOutputFormat === DetailsOutputFormat.Markdown,
-    plainVertical: detailsOutputFormat === DetailsOutputFormat.PlainVertical,
+    markdown: detailsOutputFormat === 'markdown',
+    plainVertical: detailsOutputFormat === 'plainVertical',
     start: startPath,
-    production: dependencyType === DependencyType.Production,
-    development: dependencyType === DependencyType.Development,
+    production: dependencyType === 'production',
+    development: dependencyType === 'development',
     out: detailsOutputPath,
     onlyAllow,
     customFormat: customFields,
@@ -46,7 +44,7 @@ export default async function checkLicenses(
   )
 
   return new Promise((resolve, reject) => {
-    licenseChecker.init(licenseCheckerOptions, (err, packages) => {
+    licenseChecker.init(licenseCheckerOptions, (err: Error, packages: ModuleInfos) => {
       if (err) {
         reject(err)
       } else {

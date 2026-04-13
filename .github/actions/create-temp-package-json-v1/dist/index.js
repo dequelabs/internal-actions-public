@@ -25643,150 +25643,6 @@ module.exports = {
 
 /***/ }),
 
-/***/ 1719:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(7930));
-const fs_1 = __nccwpck_require__(9896);
-const run_1 = __importDefault(__nccwpck_require__(4130));
-(0, run_1.default)(core, {
-    existsSync: fs_1.existsSync,
-    readFileSync: fs_1.readFileSync,
-    writeFileSync: fs_1.writeFileSync,
-    mkdirSync: fs_1.mkdirSync,
-    symlinkSync: fs_1.symlinkSync,
-    lstatSync: fs_1.lstatSync,
-    rmSync: fs_1.rmSync
-});
-
-
-/***/ }),
-
-/***/ 4130:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports["default"] = run;
-const path_1 = __nccwpck_require__(6928);
-async function run(core, fileSystem) {
-    try {
-        const defaultTempPackageName = 'temp-license-check';
-        const workspacePathList = core.getInput('workspace-path-list', {
-            required: true
-        });
-        const outputPath = (core.getInput('output-path') || `./${defaultTempPackageName}`).trim();
-        const { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, lstatSync, rmSync } = fileSystem;
-        if (!existsSync('./node_modules')) {
-            core.setFailed('The `node_modules` directory not found in the root directory. Please install all dependencies before this action.');
-            return;
-        }
-        const workspacePaths = workspacePathList
-            .split(',')
-            .map(path => path.trim())
-            .filter(path => path.length);
-        if (!workspacePaths.length) {
-            core.setFailed('No workspace paths provided. Please specify at least one valid workspace path in the `workspace-path-list` input.');
-            return;
-        }
-        core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`);
-        mkdirSync(outputPath, { recursive: true });
-        let mergedDependencies = {};
-        const dependenciesByWorkspaces = {};
-        for (const workspacePath of workspacePaths) {
-            core.info(`Processing the workspace: ${workspacePath}...`);
-            const packageJsonPath = (0, path_1.join)(workspacePath, 'package.json');
-            if (!existsSync(packageJsonPath)) {
-                core.warning(`The "package.json" file is not found in the "${workspacePath}" workspace. Skipping...`);
-                continue;
-            }
-            try {
-                const packageJsonContent = readFileSync(packageJsonPath, 'utf8');
-                if (!packageJsonContent.length) {
-                    core.warning(`The "package.json" file in the "${workspacePath}" workspace is empty. Skipping...`);
-                    continue;
-                }
-                const packageData = JSON.parse(packageJsonContent);
-                const dependencies = packageData.dependencies || {};
-                mergedDependencies = {
-                    ...mergedDependencies,
-                    ...dependencies
-                };
-                dependenciesByWorkspaces[packageData.name || workspacePath] =
-                    dependencies || {};
-                core.info(`The dependencies (${Object.keys(dependencies).length} items) from the "${workspacePath}" workspace are merged successfully.`);
-            }
-            catch (error) {
-                core.setFailed(`Failed to process "${packageJsonPath}": ${error.message}`);
-                return;
-            }
-        }
-        core.info(`Total merged dependencies: \n${JSON.stringify(mergedDependencies)}`);
-        if (!Object.keys(mergedDependencies).length) {
-            core.setFailed('No production dependencies found in any workspace');
-            return;
-        }
-        const tempPackageJson = {
-            name: defaultTempPackageName,
-            dependencies: mergedDependencies
-        };
-        const tempPackageJsonPath = (0, path_1.join)(outputPath, 'package.json');
-        core.info(`Creating temporary "${tempPackageJsonPath}" file with the production dependencies...`);
-        writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2));
-        core.info(`Temporary package.json created successfully`);
-        const nodeModulesSymlinkPath = (0, path_1.join)(outputPath, 'node_modules');
-        if (existsSync(nodeModulesSymlinkPath)) {
-            core.info(`Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`);
-            rmSync(nodeModulesSymlinkPath, { recursive: true, force: true });
-        }
-        symlinkSync((0, path_1.resolve)('./node_modules'), nodeModulesSymlinkPath, 'dir');
-        if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
-            core.setFailed(`Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`);
-            return;
-        }
-        core.info(`Successfully created temporary "${tempPackageJsonPath}" file with merged dependencies from all workspaces`);
-        core.info(`Production dependencies by workspaces: \n${JSON.stringify(dependenciesByWorkspaces, null, 2)}`);
-        core.info(`Grouped production dependencies: \n${JSON.stringify(mergedDependencies, null, 2)}`);
-        core.setOutput('temp-path', outputPath);
-    }
-    catch (error) {
-        core.setFailed(error.message);
-    }
-}
-
-
-/***/ }),
-
 /***/ 2613:
 /***/ ((module) => {
 
@@ -27698,12 +27554,120 @@ module.exports = parseParams
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(1719);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+
+// EXTERNAL MODULE: ../../../node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(7930);
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(9896);
+// EXTERNAL MODULE: external "path"
+var external_path_ = __nccwpck_require__(6928);
+;// CONCATENATED MODULE: ./src/run.ts
+
+async function run(core, fileSystem) {
+    try {
+        const defaultTempPackageName = 'temp-license-check';
+        const workspacePathList = core.getInput('workspace-path-list', {
+            required: true
+        });
+        const outputPath = (core.getInput('output-path') || `./${defaultTempPackageName}`).trim();
+        const { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, lstatSync, rmSync } = fileSystem;
+        if (!existsSync('./node_modules')) {
+            core.setFailed('The `node_modules` directory not found in the root directory. Please install all dependencies before this action.');
+            return;
+        }
+        const workspacePaths = workspacePathList
+            .split(',')
+            .map(path => path.trim())
+            .filter(path => path.length);
+        if (!workspacePaths.length) {
+            core.setFailed('No workspace paths provided. Please specify at least one valid workspace path in the `workspace-path-list` input.');
+            return;
+        }
+        core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`);
+        mkdirSync(outputPath, { recursive: true });
+        let mergedDependencies = {};
+        const dependenciesByWorkspaces = {};
+        for (const workspacePath of workspacePaths) {
+            core.info(`Processing the workspace: ${workspacePath}...`);
+            const packageJsonPath = (0,external_path_.join)(workspacePath, 'package.json');
+            if (!existsSync(packageJsonPath)) {
+                core.warning(`The "package.json" file is not found in the "${workspacePath}" workspace. Skipping...`);
+                continue;
+            }
+            try {
+                const packageJsonContent = readFileSync(packageJsonPath, 'utf8');
+                if (!packageJsonContent.length) {
+                    core.warning(`The "package.json" file in the "${workspacePath}" workspace is empty. Skipping...`);
+                    continue;
+                }
+                const packageData = JSON.parse(packageJsonContent);
+                const dependencies = packageData.dependencies || {};
+                mergedDependencies = {
+                    ...mergedDependencies,
+                    ...dependencies
+                };
+                dependenciesByWorkspaces[packageData.name || workspacePath] =
+                    dependencies || {};
+                core.info(`The dependencies (${Object.keys(dependencies).length} items) from the "${workspacePath}" workspace are merged successfully.`);
+            }
+            catch (error) {
+                core.setFailed(`Failed to process "${packageJsonPath}": ${error.message}`);
+                return;
+            }
+        }
+        core.info(`Total merged dependencies: \n${JSON.stringify(mergedDependencies)}`);
+        if (!Object.keys(mergedDependencies).length) {
+            core.setFailed('No production dependencies found in any workspace');
+            return;
+        }
+        const tempPackageJson = {
+            name: defaultTempPackageName,
+            dependencies: mergedDependencies
+        };
+        const tempPackageJsonPath = (0,external_path_.join)(outputPath, 'package.json');
+        core.info(`Creating temporary "${tempPackageJsonPath}" file with the production dependencies...`);
+        writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2));
+        core.info(`Temporary package.json created successfully`);
+        const nodeModulesSymlinkPath = (0,external_path_.join)(outputPath, 'node_modules');
+        if (existsSync(nodeModulesSymlinkPath)) {
+            core.info(`Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`);
+            rmSync(nodeModulesSymlinkPath, { recursive: true, force: true });
+        }
+        symlinkSync((0,external_path_.resolve)('./node_modules'), nodeModulesSymlinkPath, 'dir');
+        if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
+            core.setFailed(`Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`);
+            return;
+        }
+        core.info(`Successfully created temporary "${tempPackageJsonPath}" file with merged dependencies from all workspaces`);
+        core.info(`Production dependencies by workspaces: \n${JSON.stringify(dependenciesByWorkspaces, null, 2)}`);
+        core.info(`Grouped production dependencies: \n${JSON.stringify(mergedDependencies, null, 2)}`);
+        core.setOutput('temp-path', outputPath);
+    }
+    catch (error) {
+        core.setFailed(error.message);
+    }
+}
+
+;// CONCATENATED MODULE: ./src/index.ts
+
+
+
+run(core, {
+    existsSync: external_fs_.existsSync,
+    readFileSync: external_fs_.readFileSync,
+    writeFileSync: external_fs_.writeFileSync,
+    mkdirSync: external_fs_.mkdirSync,
+    symlinkSync: external_fs_.symlinkSync,
+    lstatSync: external_fs_.lstatSync,
+    rmSync: external_fs_.rmSync
+});
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;

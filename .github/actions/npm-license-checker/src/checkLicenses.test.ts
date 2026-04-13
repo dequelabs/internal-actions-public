@@ -1,15 +1,13 @@
 import { assert } from 'chai'
 import sinon from 'sinon'
-import checkLicenses from './checkLicenses'
-import {
+import checkLicenses from './checkLicenses.ts'
+import type {
   CheckLicensesOptions,
   Core,
-  DependencyType,
-  DetailsOutputFormat,
   LicenseChecker,
   ModuleInfos,
   CustomFields
-} from './types'
+} from './types.ts'
 
 type InitCallback = (error: Error, packages: ModuleInfos) => void
 
@@ -31,13 +29,13 @@ describe('checkLicenses', () => {
     }
 
     options = {
-      dependencyType: DependencyType.Production,
+      dependencyType: 'production',
       startPath: './test-path',
       customFields: ['author', 'license'],
       onlyAllow: 'MIT',
       excludePackages: 'excluded-package',
       excludePackagesStartingWith: '@test/',
-      detailsOutputFormat: DetailsOutputFormat.JSON,
+      detailsOutputFormat: 'json',
       clarificationsPath: './clarifications.json'
     }
 
@@ -101,7 +99,7 @@ describe('checkLicenses', () => {
   })
 
   it('should handle development dependencies', async () => {
-    options.dependencyType = DependencyType.Development
+    options.dependencyType = 'development'
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
@@ -111,7 +109,7 @@ describe('checkLicenses', () => {
   })
 
   it('should handle CSV output format', async () => {
-    options.detailsOutputFormat = DetailsOutputFormat.CSV
+    options.detailsOutputFormat = 'csv'
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -122,7 +120,7 @@ describe('checkLicenses', () => {
   })
 
   it('should handle Markdown output format', async () => {
-    options.detailsOutputFormat = DetailsOutputFormat.Markdown
+    options.detailsOutputFormat = 'markdown'
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -133,7 +131,7 @@ describe('checkLicenses', () => {
   })
 
   it('should handle PlainVertical output format', async () => {
-    options.detailsOutputFormat = DetailsOutputFormat.PlainVertical
+    options.detailsOutputFormat = 'plainVertical'
     await checkLicenses(licenseChecker, options, core)
 
     assert.deepOwnInclude(licenseChecker.init.firstCall.args[0], {
@@ -247,7 +245,7 @@ describe('checkLicenses', () => {
   })
 
   it('should handle all dependencies type', async () => {
-    options.dependencyType = DependencyType.All
+    options.dependencyType = 'all'
     await checkLicenses(licenseChecker, options, core)
 
     assert.include(licenseChecker.init.firstCall.args[0], {
