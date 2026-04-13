@@ -45,3 +45,16 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run coverage --workspace=a11y-sla-breach-labels
+
+  create-temp-package-json-v1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run coverage --workspace=create-temp-package-json-v1
