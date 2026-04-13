@@ -1,21 +1,15 @@
 import fs from 'fs'
 import path from 'path'
 import checkLicenses from './checkLicenses.ts'
-import type {
-  DependencyType,
-  RunOptions,
-  DetailsOutputFormat,
-  CustomFields,
-  CheckLicensesOptions
+import {
+  DEPENDENCY_TYPES,
+  DETAILS_OUTPUT_FORMATS,
+  type DependencyType,
+  type RunOptions,
+  type DetailsOutputFormat,
+  type CustomFields,
+  type CheckLicensesOptions
 } from './types.ts'
-
-const DEPENDENCY_TYPES: DependencyType[] = ['production', 'development', 'all']
-const DETAILS_OUTPUT_FORMATS: DetailsOutputFormat[] = [
-  'json',
-  'csv',
-  'markdown',
-  'plainVertical'
-]
 
 export default async function run({ core, licenseChecker }: RunOptions) {
   try {

@@ -51964,10 +51964,7 @@ async function checkLicenses(licenseChecker, options, core) {
     });
 }
 
-;// CONCATENATED MODULE: ./src/run.ts
-
-
-
+;// CONCATENATED MODULE: ./src/types.ts
 const DEPENDENCY_TYPES = ['production', 'development', 'all'];
 const DETAILS_OUTPUT_FORMATS = [
     'json',
@@ -51975,6 +51972,12 @@ const DETAILS_OUTPUT_FORMATS = [
     'markdown',
     'plainVertical'
 ];
+
+;// CONCATENATED MODULE: ./src/run.ts
+
+
+
+
 async function run({ core, licenseChecker }) {
     try {
         const dependencyType = core.getInput('dependency-type');

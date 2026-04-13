@@ -7,9 +7,16 @@ export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
   asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
 }
 
-export type DependencyType = 'production' | 'development' | 'all'
+export const DEPENDENCY_TYPES = ['production', 'development', 'all'] as const
+export type DependencyType = (typeof DEPENDENCY_TYPES)[number]
 
-export type DetailsOutputFormat = 'json' | 'csv' | 'markdown' | 'plainVertical'
+export const DETAILS_OUTPUT_FORMATS = [
+  'json',
+  'csv',
+  'markdown',
+  'plainVertical'
+] as const
+export type DetailsOutputFormat = (typeof DETAILS_OUTPUT_FORMATS)[number]
 
 // This matches the type of the customFormat option in license-checker-rseidelsohn
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

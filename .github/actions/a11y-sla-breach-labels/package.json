@@ -4,6 +4,9 @@
   "private": true,
   "description": "GitHub Action to manage accessibility SLA breach labels on issues.",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "prebuild": "rimraf dist",
