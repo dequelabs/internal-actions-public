@@ -1,7 +1,6 @@
 {
   "name": "internal-actions-public",
   "version": "1.0.0",
-  "type": "module",
   "description": "A collection of GitHub actions for internal use with public and private repositories",
   "scripts": {
     "prepare": "husky",

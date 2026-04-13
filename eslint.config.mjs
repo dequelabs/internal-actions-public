@@ -18,7 +18,7 @@ export default [
       '**/dist/',
       '**/coverage/',
       '**/.nyc_output/',
-      'eslint.config.js'
+      'eslint.config.mjs'
     ]
   }
 ]
