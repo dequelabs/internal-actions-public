@@ -63710,6 +63710,7 @@ var external_child_process_ = __nccwpck_require__(5317);
 
 
 
+
 function scanPnpm_scanPnpm(opts) {
     const exec = opts.exec ?? defaultExec;
     const readLicense = opts.readLicenseText ?? defaultReadLicenseText;
@@ -63772,29 +63773,16 @@ function parsePnpmOutput(stdout, readLicense) {
     }
     return result;
 }
-const LICENSE_FILE_NAMES = [
-    'LICENSE',
-    'LICENSE.md',
-    'LICENSE.txt',
-    'LICENCE',
-    'LICENCE.md',
-    'LICENCE.txt',
-    'COPYING',
-    'COPYING.md'
-];
 function defaultReadLicenseText(pkgPath) {
-    for (const name of LICENSE_FILE_NAMES) {
-        const candidate = pkgPath + (external_path_default()).sep + name;
-        if (external_fs_default().existsSync(candidate)) {
-            try {
-                return external_fs_default().readFileSync(candidate, 'utf8');
-            }
-            catch {
-                return undefined;
-            }
-        }
+    try {
+        const matched = licenseFiles(external_fs_default().readdirSync(pkgPath));
+        if (!matched.length)
+            return undefined;
+        return external_fs_default().readFileSync(external_path_default().join(pkgPath, matched[0]), 'utf8');
     }
-    return undefined;
+    catch {
+        return undefined;
+    }
 }
 
 ;// CONCATENATED MODULE: ./src/applyExcludesAndClarifications.ts
@@ -63962,7 +63950,12 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
                     ? './' + external_path_default().relative(wsRoot, absPath)
                     : undefined;
                 try {
-                    const result = scanPnpm({ cwd, filter, dependencyType, recursive: isWorkspaceRoot });
+                    const result = scanPnpm({
+                        cwd,
+                        filter,
+                        dependencyType,
+                        recursive: isWorkspaceRoot
+                    });
                     applyExcludesAndClarifications(result, excludeAndClarifyOpts);
                     allResults.push(result);
                 }

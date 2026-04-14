@@ -1,6 +1,8 @@
 import { execFileSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+// @ts-expect-error No type declarations for this internal module
+import { licenseFiles } from 'license-checker-rseidelsohn/lib/license-files.js'
 import type { DependencyType, ModuleInfos } from './types.ts'
 
 interface PnpmLicenseEntry {
@@ -111,28 +113,12 @@ function parsePnpmOutput(
   return result
 }
 
-// Common license/notice filenames packages ship.
-const LICENSE_FILE_NAMES = [
-  'LICENSE',
-  'LICENSE.md',
-  'LICENSE.txt',
-  'LICENCE',
-  'LICENCE.md',
-  'LICENCE.txt',
-  'COPYING',
-  'COPYING.md'
-]
-
 export function defaultReadLicenseText(pkgPath: string): string | undefined {
-  for (const name of LICENSE_FILE_NAMES) {
-    const candidate = pkgPath + path.sep + name
-    if (fs.existsSync(candidate)) {
-      try {
-        return fs.readFileSync(candidate, 'utf8')
-      } catch {
-        return undefined
-      }
-    }
+  try {
+    const matched = licenseFiles(fs.readdirSync(pkgPath)) as string[]
+    if (!matched.length) return undefined
+    return fs.readFileSync(path.join(pkgPath, matched[0]), 'utf8')
+  } catch {
+    return undefined
   }
-  return undefined
 }
