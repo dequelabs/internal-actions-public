@@ -144,6 +144,16 @@ export default async function run({
     // else goes through the standard expand-workspaces + resolve-node-modules
     // + library scan pipeline.
     const allResults: ModuleInfos[] = []
+
+    // Build exclude/clarification options once for reuse across pnpm scans.
+    const excludeAndClarifyOpts = {
+      ...(excludePackages.trim().length && { excludePackages }),
+      ...(excludePackagesStartingWith.trim().length && {
+        excludePackagesStartingWith
+      }),
+      ...(clarificationsPath.trim().length && { clarificationsPath })
+    }
+
     for (const p of userPaths) {
       const absPath = path.resolve(p)
 
@@ -154,13 +164,25 @@ export default async function run({
         // itself), run pnpm in the path's own cwd.
         const wsRoot = findPnpmWorkspaceRoot(absPath)
         const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath
+        const isWorkspaceRoot = wsRoot !== null && wsRoot === absPath
         const cwd = isWorkspaceMember ? wsRoot : absPath
         const filter = isWorkspaceMember
           ? './' + path.relative(wsRoot, absPath)
           : undefined
 
-        const result = scanPnpm({ cwd, filter, dependencyType })
-        allResults.push(result)
+        try {
+          const result = scanPnpm({
+            cwd,
+            filter,
+            dependencyType,
+            recursive: isWorkspaceRoot
+          })
+          applyExcludesAndClarifications(result, excludeAndClarifyOpts)
+          allResults.push(result)
+        } catch (error) {
+          core.setFailed((error as Error).message)
+          return
+        }
         continue
       }
 
@@ -172,11 +194,7 @@ export default async function run({
             startPath: scanPath,
             dependencyType,
             customFields,
-            ...(excludePackages.trim().length && { excludePackages }),
-            ...(excludePackagesStartingWith.trim().length && {
-              excludePackagesStartingWith
-            }),
-            ...(clarificationsPath.trim().length && { clarificationsPath })
+            ...excludeAndClarifyOpts
           }
           const result = await checkLicensesRaw(
             licenseChecker,
@@ -191,18 +209,6 @@ export default async function run({
     }
 
     const merged: ModuleInfos = Object.assign({}, ...allResults)
-
-    // pnpm's CLI doesn't natively support our exclude/clarifications inputs;
-    // apply them here so behavior is uniform across scan paths. (For the
-    // library scan path, they were already applied during checkLicensesRaw,
-    // but this is idempotent.)
-    applyExcludesAndClarifications(merged, {
-      ...(excludePackages.trim().length && { excludePackages }),
-      ...(excludePackagesStartingWith.trim().length && {
-        excludePackagesStartingWith
-      }),
-      ...(clarificationsPath.trim().length && { clarificationsPath })
-    })
 
     try {
       checkOnlyAllow(merged, onlyAllow)

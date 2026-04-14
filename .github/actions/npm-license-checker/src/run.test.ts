@@ -328,6 +328,23 @@ describe('run', () => {
     assert.ok(msg.includes('Unexpected error occurred'))
   })
 
+  it('should surface pnpm not-found error without wrapper', async () => {
+    mockDetectPnpm.returns(true)
+    mockFindPnpmWorkspaceRoot.returns(null)
+    mockScanPnpm.throws(
+      new Error(
+        'pnpm is required to scan a pnpm-managed project but was not found on PATH. Install pnpm in your workflow (for example, add a step "uses: pnpm/action-setup@v4") and retry.'
+      )
+    )
+
+    await runWithMocks()
+
+    assert.strictEqual(core.setFailed.called, true)
+    const msg = core.setFailed.firstCall.args[0] as string
+    assert.ok(msg.includes('pnpm/action-setup'))
+    assert.ok(!msg.includes('Error checking licenses'))
+  })
+
   it('should use default expandWorkspaces and resolveNodeModules when not injected', async () => {
     // Call run without DI overrides — exercises the default parameter branches.
     // The real defaults will run but since fs is stubbed, the scan likely

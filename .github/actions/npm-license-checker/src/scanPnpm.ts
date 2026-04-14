@@ -19,6 +19,7 @@ export interface ScanPnpmOptions {
   cwd: string
   filter?: string
   dependencyType: DependencyType
+  recursive?: boolean
   /** Override for testing — defaults to child_process.execFileSync. */
   exec?: (file: string, args: string[], opts: object) => string
   /** Override for testing — defaults to reading LICENSE from disk. */
@@ -37,6 +38,9 @@ export default function scanPnpm(opts: ScanPnpmOptions): ModuleInfos {
   const args: string[] = []
   if (opts.filter) {
     args.push('--filter', opts.filter)
+  }
+  if (opts.recursive) {
+    args.push('-r')
   }
   args.push('licenses', 'list', '--json', '--long')
   if (opts.dependencyType === 'production') args.push('--prod')

@@ -96,6 +96,35 @@ describe('scanPnpm', () => {
     assert.ok(capturedArgs.includes('./packages/app-b'))
   })
 
+  it('should pass -r when recursive is true', () => {
+    let capturedArgs: string[] = []
+    const spy = (_f: string, args: string[]) => {
+      capturedArgs = args
+      return '{}'
+    }
+
+    scanPnpm({
+      cwd: '/repo',
+      dependencyType: 'production',
+      recursive: true,
+      exec: spy
+    })
+
+    assert.ok(capturedArgs.includes('-r'))
+  })
+
+  it('should not pass -r when recursive is false or omitted', () => {
+    let capturedArgs: string[] = []
+    const spy = (_f: string, args: string[]) => {
+      capturedArgs = args
+      return '{}'
+    }
+
+    scanPnpm({ cwd: '/repo', dependencyType: 'production', exec: spy })
+
+    assert.ok(!capturedArgs.includes('-r'))
+  })
+
   it('should throw actionable error when pnpm not found', () => {
     const exec = () => {
       const err = new Error('spawn pnpm ENOENT') as NodeJS.ErrnoException

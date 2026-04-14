@@ -63717,6 +63717,9 @@ function scanPnpm_scanPnpm(opts) {
     if (opts.filter) {
         args.push('--filter', opts.filter);
     }
+    if (opts.recursive) {
+        args.push('-r');
+    }
     args.push('licenses', 'list', '--json', '--long');
     if (opts.dependencyType === 'production')
         args.push('--prod');
@@ -63941,17 +63944,32 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
             }
         }
         const allResults = [];
+        const excludeAndClarifyOpts = {
+            ...(excludePackages.trim().length && { excludePackages }),
+            ...(excludePackagesStartingWith.trim().length && {
+                excludePackagesStartingWith
+            }),
+            ...(clarificationsPath.trim().length && { clarificationsPath })
+        };
         for (const p of userPaths) {
             const absPath = external_path_default().resolve(p);
             if (detectPnpm(absPath)) {
                 const wsRoot = findPnpmWorkspaceRoot(absPath);
                 const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath;
+                const isWorkspaceRoot = wsRoot !== null && wsRoot === absPath;
                 const cwd = isWorkspaceMember ? wsRoot : absPath;
                 const filter = isWorkspaceMember
                     ? './' + external_path_default().relative(wsRoot, absPath)
                     : undefined;
-                const result = scanPnpm({ cwd, filter, dependencyType });
-                allResults.push(result);
+                try {
+                    const result = scanPnpm({ cwd, filter, dependencyType, recursive: isWorkspaceRoot });
+                    applyExcludesAndClarifications(result, excludeAndClarifyOpts);
+                    allResults.push(result);
+                }
+                catch (error) {
+                    core.setFailed(error.message);
+                    return;
+                }
                 continue;
             }
             const expanded = expandWorkspaces(absPath);
@@ -63962,11 +63980,7 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
                         startPath: scanPath,
                         dependencyType,
                         customFields,
-                        ...(excludePackages.trim().length && { excludePackages }),
-                        ...(excludePackagesStartingWith.trim().length && {
-                            excludePackagesStartingWith
-                        }),
-                        ...(clarificationsPath.trim().length && { clarificationsPath })
+                        ...excludeAndClarifyOpts
                     };
                     const result = await checkLicensesRaw(licenseChecker, rawOptions, core);
                     allResults.push(result);
@@ -63977,13 +63991,6 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
             }
         }
         const merged = Object.assign({}, ...allResults);
-        applyExcludesAndClarifications(merged, {
-            ...(excludePackages.trim().length && { excludePackages }),
-            ...(excludePackagesStartingWith.trim().length && {
-                excludePackagesStartingWith
-            }),
-            ...(clarificationsPath.trim().length && { clarificationsPath })
-        });
         try {
             checkOnlyAllow(merged, onlyAllow);
         }
