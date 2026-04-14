@@ -46,9 +46,18 @@ export interface ResolvedNodeModules {
   cleanup: () => void
 }
 
+export interface ScanPnpmOptions {
+  cwd: string
+  filter?: string
+  dependencyType: DependencyType
+}
+
 export interface RunOptions {
   core: Core
   licenseChecker: LicenseChecker
   expandWorkspaces?: (startPath: string) => string[]
   resolveNodeModules?: (startPath: string) => ResolvedNodeModules
+  detectPnpm?: (startPath: string) => boolean
+  findPnpmWorkspaceRoot?: (startPath: string) => string | null
+  scanPnpm?: (opts: ScanPnpmOptions) => ModuleInfos
 }

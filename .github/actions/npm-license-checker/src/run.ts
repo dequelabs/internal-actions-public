@@ -5,6 +5,11 @@ import checkOnlyAllow from './checkOnlyAllow.ts'
 import formatOutput from './formatOutput.ts'
 import defaultExpandWorkspaces from './expandWorkspaces.ts'
 import defaultResolveNodeModules from './resolveNodeModules.ts'
+import defaultDetectPnpm, {
+  findPnpmWorkspaceRoot as defaultFindPnpmWorkspaceRoot
+} from './detectPnpm.ts'
+import defaultScanPnpm from './scanPnpm.ts'
+import applyExcludesAndClarifications from './applyExcludesAndClarifications.ts'
 import { pkgJsonFilename } from './nccEscape.ts'
 import {
   DEPENDENCY_TYPES,
@@ -21,7 +26,10 @@ export default async function run({
   core,
   licenseChecker,
   expandWorkspaces = defaultExpandWorkspaces,
-  resolveNodeModules = defaultResolveNodeModules
+  resolveNodeModules = defaultResolveNodeModules,
+  detectPnpm = defaultDetectPnpm,
+  findPnpmWorkspaceRoot = defaultFindPnpmWorkspaceRoot,
+  scanPnpm = defaultScanPnpm
 }: RunOptions) {
   try {
     const dependencyType = core.getInput('dependency-type') as DependencyType
@@ -131,10 +139,32 @@ export default async function run({
       }
     }
 
-    // Smart scan: expand workspaces, resolve node_modules, scan each
+    // Smart scan: route pnpm-managed projects to `pnpm licenses list`
+    // (only it can correctly walk pnpm's `.pnpm` sibling layout); everything
+    // else goes through the standard expand-workspaces + resolve-node-modules
+    // + library scan pipeline.
     const allResults: ModuleInfos[] = []
     for (const p of userPaths) {
-      const expanded = expandWorkspaces(path.resolve(p))
+      const absPath = path.resolve(p)
+
+      if (detectPnpm(absPath)) {
+        // For workspace members, run pnpm at the workspace root with a
+        // relative-path `--filter` selector (pnpm does not accept absolute
+        // paths here). For a standalone pnpm project (or the workspace root
+        // itself), run pnpm in the path's own cwd.
+        const wsRoot = findPnpmWorkspaceRoot(absPath)
+        const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath
+        const cwd = isWorkspaceMember ? wsRoot : absPath
+        const filter = isWorkspaceMember
+          ? './' + path.relative(wsRoot, absPath)
+          : undefined
+
+        const result = scanPnpm({ cwd, filter, dependencyType })
+        allResults.push(result)
+        continue
+      }
+
+      const expanded = expandWorkspaces(absPath)
       for (const wsPath of expanded) {
         const { scanPath, cleanup } = resolveNodeModules(wsPath)
         try {
@@ -161,6 +191,18 @@ export default async function run({
     }
 
     const merged: ModuleInfos = Object.assign({}, ...allResults)
+
+    // pnpm's CLI doesn't natively support our exclude/clarifications inputs;
+    // apply them here so behavior is uniform across scan paths. (For the
+    // library scan path, they were already applied during checkLicensesRaw,
+    // but this is idempotent.)
+    applyExcludesAndClarifications(merged, {
+      ...(excludePackages.trim().length && { excludePackages }),
+      ...(excludePackagesStartingWith.trim().length && {
+        excludePackagesStartingWith
+      }),
+      ...(clarificationsPath.trim().length && { clarificationsPath })
+    })
 
     try {
       checkOnlyAllow(merged, onlyAllow)

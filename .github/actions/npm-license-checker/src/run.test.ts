@@ -15,6 +15,9 @@ describe('run', () => {
   let writeFileSyncStub: sinon.SinonStub
   let mockExpandWorkspaces: sinon.SinonStub
   let mockResolveNodeModules: sinon.SinonStub
+  let mockDetectPnpm: sinon.SinonStub
+  let mockFindPnpmWorkspaceRoot: sinon.SinonStub
+  let mockScanPnpm: sinon.SinonStub
 
   beforeEach(() => {
     // Setup core mock
@@ -60,6 +63,9 @@ describe('run', () => {
     mockResolveNodeModules = sinon
       .stub()
       .callsFake((p: string) => ({ scanPath: p, cleanup: sinon.stub() }))
+    mockDetectPnpm = sinon.stub().returns(false)
+    mockFindPnpmWorkspaceRoot = sinon.stub().returns(null)
+    mockScanPnpm = sinon.stub().returns({})
 
     // Default input values
     core.getInput.withArgs('dependency-type').returns('production')
@@ -83,7 +89,10 @@ describe('run', () => {
       core,
       licenseChecker,
       expandWorkspaces: mockExpandWorkspaces,
-      resolveNodeModules: mockResolveNodeModules
+      resolveNodeModules: mockResolveNodeModules,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
     })
   }
 

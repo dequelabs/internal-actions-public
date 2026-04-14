@@ -19,8 +19,7 @@ describe('resolveNodeModules', () => {
     }
   })
 
-  it('should scan directly when node_modules exists and no ancestor', () => {
-    // Simulate a standalone project (node_modules at root of temp dir)
+  it('should scan directly when local node_modules exists', () => {
     const dir = createFixtureDir()
     fs.mkdirSync(path.join(dir, 'node_modules'))
 
@@ -28,6 +27,25 @@ describe('resolveNodeModules', () => {
 
     assert.strictEqual(scanPath, dir)
     cleanup() // no-op
+  })
+
+  it('should scan directly when local node_modules is a symlink', () => {
+    // Covers the create-temp-package-json pattern: startPath has a
+    // node_modules symlink pointing at the ancestor's node_modules.
+    const root = createFixtureDir()
+    const rootNm = path.join(root, 'node_modules')
+    fs.mkdirSync(rootNm)
+    fs.mkdirSync(path.join(rootNm, 'dep-a'))
+
+    const wsDir = path.join(root, 'temp-license-check')
+    fs.mkdirSync(wsDir)
+    fs.writeFileSync(path.join(wsDir, 'package.json'), '{}')
+    fs.symlinkSync(rootNm, path.join(wsDir, 'node_modules'), 'dir')
+
+    const { scanPath, cleanup } = resolveNodeModules(wsDir)
+
+    assert.strictEqual(scanPath, wsDir)
+    cleanup()
   })
 
   it('should create temp dir when no local node_modules but ancestor exists', () => {
@@ -51,152 +69,18 @@ describe('resolveNodeModules', () => {
 
     assert.notStrictEqual(scanPath, wsDir)
     assert.strictEqual(fs.existsSync(path.join(scanPath, 'package.json')), true)
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', 'is-number')),
-      true
-    )
+    // node_modules should be a single symlink to the ancestor
+    const nmPath = path.join(scanPath, 'node_modules')
+    assert.strictEqual(fs.lstatSync(nmPath).isSymbolicLink(), true)
+    assert.strictEqual(fs.readlinkSync(nmPath), rootNm)
+    // The symlinked node_modules should contain the ancestor's packages
+    assert.strictEqual(fs.existsSync(path.join(nmPath, 'is-number')), true)
 
     cleanup()
     assert.strictEqual(fs.existsSync(scanPath), false)
   })
 
-  it('should merge local and ancestor node_modules for partial hoisting', () => {
-    const root = createFixtureDir()
-    // Root has dep-a@1.0.0
-    const rootNm = path.join(root, 'node_modules')
-    fs.mkdirSync(path.join(rootNm, 'dep-a'), { recursive: true })
-    fs.writeFileSync(
-      path.join(rootNm, 'dep-a', 'package.json'),
-      JSON.stringify({ name: 'dep-a', version: '1.0.0' })
-    )
-    fs.mkdirSync(path.join(rootNm, 'dep-b'))
-    fs.writeFileSync(
-      path.join(rootNm, 'dep-b', 'package.json'),
-      JSON.stringify({ name: 'dep-b', version: '1.0.0' })
-    )
-
-    // Workspace has local dep-a@2.0.0 override
-    const wsDir = path.join(root, 'packages', 'app-a')
-    fs.mkdirSync(wsDir, { recursive: true })
-    fs.writeFileSync(path.join(wsDir, 'package.json'), '{}')
-    const wsNm = path.join(wsDir, 'node_modules')
-    fs.mkdirSync(path.join(wsNm, 'dep-a'), { recursive: true })
-    fs.writeFileSync(
-      path.join(wsNm, 'dep-a', 'package.json'),
-      JSON.stringify({ name: 'dep-a', version: '2.0.0' })
-    )
-
-    const { scanPath, cleanup } = resolveNodeModules(wsDir)
-
-    assert.notStrictEqual(scanPath, wsDir)
-    // Should have dep-b from ancestor
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', 'dep-b')),
-      true
-    )
-    // dep-a should be the local override (pointing to workspace's version)
-    const depATarget = fs.readlinkSync(
-      path.join(scanPath, 'node_modules', 'dep-a')
-    )
-    assert.ok(depATarget.includes(path.join('app-a', 'node_modules', 'dep-a')))
-
-    cleanup()
-  })
-
-  it('should handle scoped packages', () => {
-    const root = createFixtureDir()
-    const rootNm = path.join(root, 'node_modules')
-    fs.mkdirSync(path.join(rootNm, '@scope', 'pkg'), { recursive: true })
-    fs.writeFileSync(
-      path.join(rootNm, '@scope', 'pkg', 'package.json'),
-      JSON.stringify({ name: '@scope/pkg' })
-    )
-
-    const wsDir = path.join(root, 'packages', 'app-a')
-    fs.mkdirSync(wsDir, { recursive: true })
-    fs.writeFileSync(path.join(wsDir, 'package.json'), '{}')
-
-    const { scanPath, cleanup } = resolveNodeModules(wsDir)
-
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', '@scope', 'pkg')),
-      true
-    )
-
-    cleanup()
-  })
-
-  it('should handle scoped package overrides in partial hoisting', () => {
-    const root = createFixtureDir()
-    const rootNm = path.join(root, 'node_modules')
-    fs.mkdirSync(path.join(rootNm, '@scope', 'pkg'), { recursive: true })
-    fs.writeFileSync(
-      path.join(rootNm, '@scope', 'pkg', 'package.json'),
-      JSON.stringify({ version: '1.0.0' })
-    )
-
-    const wsDir = path.join(root, 'packages', 'app-a')
-    fs.mkdirSync(wsDir, { recursive: true })
-    fs.writeFileSync(path.join(wsDir, 'package.json'), '{}')
-    // Local scoped override
-    const wsNm = path.join(wsDir, 'node_modules')
-    fs.mkdirSync(path.join(wsNm, '@scope', 'pkg'), { recursive: true })
-    fs.writeFileSync(
-      path.join(wsNm, '@scope', 'pkg', 'package.json'),
-      JSON.stringify({ version: '2.0.0' })
-    )
-
-    const { scanPath, cleanup } = resolveNodeModules(wsDir)
-
-    const target = fs.readlinkSync(
-      path.join(scanPath, 'node_modules', '@scope', 'pkg')
-    )
-    assert.ok(target.includes(path.join('app-a', 'node_modules')))
-
-    cleanup()
-  })
-
-  it('should skip .pnpm, .package-lock.json, .modules.yaml, .yarn-integrity', () => {
-    const root = createFixtureDir()
-    const rootNm = path.join(root, 'node_modules')
-    fs.mkdirSync(rootNm)
-    fs.mkdirSync(path.join(rootNm, '.pnpm'))
-    fs.writeFileSync(path.join(rootNm, '.package-lock.json'), '{}')
-    fs.writeFileSync(path.join(rootNm, '.modules.yaml'), '')
-    fs.writeFileSync(path.join(rootNm, '.yarn-integrity'), '')
-    fs.mkdirSync(path.join(rootNm, 'is-number'))
-
-    const wsDir = path.join(root, 'packages', 'app-a')
-    fs.mkdirSync(wsDir, { recursive: true })
-    fs.writeFileSync(path.join(wsDir, 'package.json'), '{}')
-
-    const { scanPath, cleanup } = resolveNodeModules(wsDir)
-
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', '.pnpm')),
-      false
-    )
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', '.package-lock.json')),
-      false
-    )
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', '.modules.yaml')),
-      false
-    )
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', '.yarn-integrity')),
-      false
-    )
-    assert.strictEqual(
-      fs.existsSync(path.join(scanPath, 'node_modules', 'is-number')),
-      true
-    )
-
-    cleanup()
-  })
-
-  it('should return startPath when no ancestor node_modules found', () => {
+  it('should return startPath when no node_modules found anywhere', () => {
     const isolated = fs.mkdtempSync(path.join(os.tmpdir(), 'no-nm-'))
     tempFixtureDir = isolated
     const deepDir = path.join(isolated, 'a', 'b', 'c')

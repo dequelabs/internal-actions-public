@@ -12,37 +12,42 @@ export default function resolveNodeModules(
   const hasLocalNodeModules = fs.existsSync(localNodeModules)
   const ancestorNodeModules = findAncestorNodeModules(startPath)
 
+  // Local node_modules covers this path — scan directly. This handles:
+  //   - single projects (local exists, no ancestor relevant)
+  //   - pnpm workspace members (own node_modules)
+  //   - create-temp-package-json output (local is a symlink to ancestor)
+  // Partial hoisting (local has some deps, rest are hoisted to ancestor) is a
+  // known limitation: we'd miss the hoisted deps. Callers that need this can
+  // install via pnpm or set up a merged node_modules themselves.
+  if (hasLocalNodeModules) {
+    return { scanPath: startPath, cleanup: () => {} }
+  }
+
   // No local node_modules and no ancestor — scan as-is, let the library error
-  if (!hasLocalNodeModules && !ancestorNodeModules) {
+  if (!ancestorNodeModules) {
     return { scanPath: startPath, cleanup: () => {} }
   }
 
-  // Local node_modules exists and no ancestor — scan directly (single project
-  // or pnpm workspace where deps are in the workspace's own node_modules)
-  if (hasLocalNodeModules && !ancestorNodeModules) {
-    return { scanPath: startPath, cleanup: () => {} }
-  }
-
-  // Only ancestor — fully hoisted (npm/yarn workspace with no local overrides)
-  // Or both local and ancestor — partial hoisting (local overrides win)
-  // In both cases, build a merged node_modules in a temp dir.
+  // No local node_modules but ancestor exists (npm/yarn workspace member with
+  // all deps hoisted to the root). Create a temp dir with the workspace's
+  // package.json and a single symlink to the ancestor's node_modules.
+  //
+  // We symlink the whole directory (not per-package) because read-installed-
+  // packages sets obj.link when a package path lstats as a symlink, which
+  // stops its dependency walk-up. A single node_modules-level symlink keeps
+  // individual packages looking like regular directories.
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'license-scan-'))
 
-  // Copy package.json
   const srcPkgJson = startPath + path.sep + pkgJsonFilename()
   if (fs.existsSync(srcPkgJson)) {
     fs.copyFileSync(srcPkgJson, tempDir + path.sep + pkgJsonFilename())
   }
 
-  // Build merged node_modules: ancestor first, then local overrides
-  const tempNodeModules = tempDir + path.sep + nodeModulesDir()
-  fs.mkdirSync(tempNodeModules)
-
-  symlinkNodeModulesEntries(ancestorNodeModules!, tempNodeModules)
-
-  if (hasLocalNodeModules) {
-    symlinkNodeModulesEntries(localNodeModules, tempNodeModules)
-  }
+  fs.symlinkSync(
+    ancestorNodeModules,
+    tempDir + path.sep + nodeModulesDir(),
+    'dir'
+  )
 
   return {
     scanPath: tempDir,
@@ -65,39 +70,4 @@ function findAncestorNodeModules(startPath: string): string | null {
   }
 
   return null
-}
-
-function symlinkNodeModulesEntries(source: string, target: string): void {
-  for (const entry of fs.readdirSync(source)) {
-    if (
-      entry === '.pnpm' ||
-      entry === '.package-lock.json' ||
-      entry === '.modules.yaml' ||
-      entry === '.yarn-integrity'
-    ) {
-      continue
-    }
-
-    const sourcePath = path.join(source, entry)
-    const targetPath = path.join(target, entry)
-
-    if (entry.startsWith('@')) {
-      if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath)
-      }
-      for (const scopedEntry of fs.readdirSync(sourcePath)) {
-        const scopedSource = path.join(sourcePath, scopedEntry)
-        const scopedTarget = path.join(targetPath, scopedEntry)
-        if (fs.existsSync(scopedTarget)) {
-          fs.rmSync(scopedTarget, { recursive: true, force: true })
-        }
-        fs.symlinkSync(scopedSource, scopedTarget)
-      }
-    } else {
-      if (fs.existsSync(targetPath)) {
-        fs.rmSync(targetPath, { recursive: true, force: true })
-      }
-      fs.symlinkSync(sourcePath, targetPath)
-    }
-  }
 }

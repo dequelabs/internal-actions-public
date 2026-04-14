@@ -50485,6 +50485,7 @@ var treeify = __nccwpck_require__(610);
 var external_crypto_ = __nccwpck_require__(6982);
 // EXTERNAL MODULE: ../../../node_modules/semver/index.js
 var semver = __nccwpck_require__(530);
+var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
 // EXTERNAL MODULE: ../../../node_modules/lodash.clonedeep/index.js
 var lodash_clonedeep = __nccwpck_require__(8133);
 ;// CONCATENATED MODULE: ../../../node_modules/license-checker-rseidelsohn/lib/licenseCheckerHelpers.js
@@ -63638,10 +63639,10 @@ function resolveNodeModules_resolveNodeModules(startPath) {
     const localNodeModules = startPath + (external_path_default()).sep + nodeModulesDir();
     const hasLocalNodeModules = external_fs_default().existsSync(localNodeModules);
     const ancestorNodeModules = findAncestorNodeModules(startPath);
-    if (!hasLocalNodeModules && !ancestorNodeModules) {
+    if (hasLocalNodeModules) {
         return { scanPath: startPath, cleanup: () => { } };
     }
-    if (hasLocalNodeModules && !ancestorNodeModules) {
+    if (!ancestorNodeModules) {
         return { scanPath: startPath, cleanup: () => { } };
     }
     const tempDir = external_fs_default().mkdtempSync(external_path_default().join(external_os_default().tmpdir(), 'license-scan-'));
@@ -63649,12 +63650,7 @@ function resolveNodeModules_resolveNodeModules(startPath) {
     if (external_fs_default().existsSync(srcPkgJson)) {
         external_fs_default().copyFileSync(srcPkgJson, tempDir + (external_path_default()).sep + pkgJsonFilename());
     }
-    const tempNodeModules = tempDir + (external_path_default()).sep + nodeModulesDir();
-    external_fs_default().mkdirSync(tempNodeModules);
-    symlinkNodeModulesEntries(ancestorNodeModules, tempNodeModules);
-    if (hasLocalNodeModules) {
-        symlinkNodeModulesEntries(localNodeModules, tempNodeModules);
-    }
+    external_fs_default().symlinkSync(ancestorNodeModules, tempDir + (external_path_default()).sep + nodeModulesDir(), 'dir');
     return {
         scanPath: tempDir,
         cleanup: () => {
@@ -63674,36 +63670,180 @@ function findAncestorNodeModules(startPath) {
     }
     return null;
 }
-function symlinkNodeModulesEntries(source, target) {
-    for (const entry of external_fs_default().readdirSync(source)) {
-        if (entry === '.pnpm' ||
-            entry === '.package-lock.json' ||
-            entry === '.modules.yaml' ||
-            entry === '.yarn-integrity') {
-            continue;
+
+;// CONCATENATED MODULE: ./src/detectPnpm.ts
+
+
+
+const PNPM_DIR = '.' + 'pnpm';
+const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.');
+const PNPM_LOCK = ['pnpm-lock', 'yaml'].join('.');
+function detectPnpm_detectPnpm(startPath) {
+    let dir = external_path_default().resolve(startPath);
+    const root = external_path_default().parse(dir).root;
+    while (dir !== root) {
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + nodeModulesDir() + (external_path_default()).sep + PNPM_DIR)) {
+            return true;
         }
-        const sourcePath = external_path_default().join(source, entry);
-        const targetPath = external_path_default().join(target, entry);
-        if (entry.startsWith('@')) {
-            if (!external_fs_default().existsSync(targetPath)) {
-                external_fs_default().mkdirSync(targetPath);
-            }
-            for (const scopedEntry of external_fs_default().readdirSync(sourcePath)) {
-                const scopedSource = external_path_default().join(sourcePath, scopedEntry);
-                const scopedTarget = external_path_default().join(targetPath, scopedEntry);
-                if (external_fs_default().existsSync(scopedTarget)) {
-                    external_fs_default().rmSync(scopedTarget, { recursive: true, force: true });
-                }
-                external_fs_default().symlinkSync(scopedSource, scopedTarget);
-            }
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+            return true;
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_LOCK))
+            return true;
+        dir = external_path_default().dirname(dir);
+    }
+    return false;
+}
+function detectPnpm_findPnpmWorkspaceRoot(startPath) {
+    let dir = external_path_default().resolve(startPath);
+    const root = external_path_default().parse(dir).root;
+    while (dir !== root) {
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+            return dir;
+        dir = external_path_default().dirname(dir);
+    }
+    return null;
+}
+
+// EXTERNAL MODULE: external "child_process"
+var external_child_process_ = __nccwpck_require__(5317);
+;// CONCATENATED MODULE: ./src/scanPnpm.ts
+
+
+
+function scanPnpm_scanPnpm(opts) {
+    const exec = opts.exec ?? defaultExec;
+    const readLicense = opts.readLicenseText ?? defaultReadLicenseText;
+    const args = [];
+    if (opts.filter) {
+        args.push('--filter', opts.filter);
+    }
+    args.push('licenses', 'list', '--json', '--long');
+    if (opts.dependencyType === 'production')
+        args.push('--prod');
+    let stdout;
+    try {
+        stdout = exec('pnpm', args, {
+            cwd: opts.cwd,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+    }
+    catch (err) {
+        const e = err;
+        if (e.code === 'ENOENT') {
+            throw new Error('pnpm is required to scan a pnpm-managed project but was not found ' +
+                'on PATH. Install pnpm in your workflow (for example, add a step ' +
+                '"uses: pnpm/action-setup@v4") and retry.');
         }
-        else {
-            if (external_fs_default().existsSync(targetPath)) {
-                external_fs_default().rmSync(targetPath, { recursive: true, force: true });
+        const stderr = (e.stderr || '').toString().trim();
+        throw new Error(`\`pnpm licenses list\` failed: ${e.message}` +
+            (stderr ? `\n${stderr}` : ''));
+    }
+    return parsePnpmOutput(stdout, readLicense);
+}
+function defaultExec(file, args, opts) {
+    return (0,external_child_process_.execFileSync)(file, args, opts);
+}
+function parsePnpmOutput(stdout, readLicense) {
+    const parsed = JSON.parse(stdout);
+    const result = {};
+    for (const entries of Object.values(parsed)) {
+        for (const entry of entries) {
+            for (let i = 0; i < entry.versions.length; i++) {
+                const version = entry.versions[i];
+                const pkgPath = entry.paths[i];
+                const key = `${entry.name}@${version}`;
+                result[key] = {
+                    name: entry.name,
+                    version,
+                    licenses: entry.license,
+                    ...(entry.author && { publisher: entry.author }),
+                    ...(entry.homepage && { url: entry.homepage }),
+                    ...(pkgPath && { path: pkgPath }),
+                    ...(pkgPath && {
+                        licenseText: readLicense(pkgPath) || ''
+                    })
+                };
             }
-            external_fs_default().symlinkSync(sourcePath, targetPath);
         }
     }
+    return result;
+}
+const LICENSE_FILE_NAMES = [
+    'LICENSE',
+    'LICENSE.md',
+    'LICENSE.txt',
+    'LICENCE',
+    'LICENCE.md',
+    'LICENCE.txt',
+    'COPYING',
+    'COPYING.md'
+];
+function defaultReadLicenseText(pkgPath) {
+    for (const name of LICENSE_FILE_NAMES) {
+        const candidate = pkgPath + (external_path_default()).sep + name;
+        if (external_fs_default().existsSync(candidate)) {
+            try {
+                return external_fs_default().readFileSync(candidate, 'utf8');
+            }
+            catch {
+                return undefined;
+            }
+        }
+    }
+    return undefined;
+}
+
+;// CONCATENATED MODULE: ./src/applyExcludesAndClarifications.ts
+
+
+function applyExcludesAndClarifications(merged, options) {
+    const excludeNames = splitList(options.excludePackages);
+    const excludePrefixes = splitList(options.excludePackagesStartingWith);
+    if (excludeNames.length || excludePrefixes.length) {
+        for (const key of Object.keys(merged)) {
+            const name = nameFromKey(key);
+            if (excludeNames.includes(name) ||
+                excludePrefixes.some(prefix => name.startsWith(prefix))) {
+                delete merged[key];
+            }
+        }
+    }
+    if (options.clarificationsPath) {
+        const raw = external_fs_default().readFileSync(options.clarificationsPath, 'utf8');
+        const clarifications = JSON.parse(raw);
+        for (const [spec, override] of Object.entries(clarifications)) {
+            const at = spec.lastIndexOf('@');
+            if (at <= 0)
+                continue;
+            const targetName = spec.substring(0, at);
+            const range = spec.substring(at + 1);
+            for (const [key, info] of Object.entries(merged)) {
+                const at2 = key.lastIndexOf('@');
+                if (at2 <= 0)
+                    continue;
+                const keyName = key.substring(0, at2);
+                const keyVersion = key.substring(at2 + 1);
+                if (keyName === targetName &&
+                    semver_default().valid(keyVersion) &&
+                    semver_default().satisfies(keyVersion, range)) {
+                    Object.assign(info, override);
+                }
+            }
+        }
+    }
+}
+function splitList(value) {
+    if (!value)
+        return [];
+    return value
+        .split(';')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+}
+function nameFromKey(key) {
+    const at = key.lastIndexOf('@');
+    return at > 0 ? key.substring(0, at) : key;
 }
 
 ;// CONCATENATED MODULE: ./src/types.ts
@@ -63725,7 +63865,10 @@ const DETAILS_OUTPUT_FORMATS = [
 
 
 
-async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_expandWorkspaces, resolveNodeModules = resolveNodeModules_resolveNodeModules }) {
+
+
+
+async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_expandWorkspaces, resolveNodeModules = resolveNodeModules_resolveNodeModules, detectPnpm = detectPnpm_detectPnpm, findPnpmWorkspaceRoot = detectPnpm_findPnpmWorkspaceRoot, scanPnpm = scanPnpm_scanPnpm }) {
     try {
         const dependencyType = core.getInput('dependency-type');
         const startPath = core.getInput('start-path');
@@ -63799,7 +63942,19 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
         }
         const allResults = [];
         for (const p of userPaths) {
-            const expanded = expandWorkspaces(external_path_default().resolve(p));
+            const absPath = external_path_default().resolve(p);
+            if (detectPnpm(absPath)) {
+                const wsRoot = findPnpmWorkspaceRoot(absPath);
+                const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath;
+                const cwd = isWorkspaceMember ? wsRoot : absPath;
+                const filter = isWorkspaceMember
+                    ? './' + external_path_default().relative(wsRoot, absPath)
+                    : undefined;
+                const result = scanPnpm({ cwd, filter, dependencyType });
+                allResults.push(result);
+                continue;
+            }
+            const expanded = expandWorkspaces(absPath);
             for (const wsPath of expanded) {
                 const { scanPath, cleanup } = resolveNodeModules(wsPath);
                 try {
@@ -63822,6 +63977,13 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
             }
         }
         const merged = Object.assign({}, ...allResults);
+        applyExcludesAndClarifications(merged, {
+            ...(excludePackages.trim().length && { excludePackages }),
+            ...(excludePackagesStartingWith.trim().length && {
+                excludePackagesStartingWith
+            }),
+            ...(clarificationsPath.trim().length && { clarificationsPath })
+        });
         try {
             checkOnlyAllow(merged, onlyAllow);
         }

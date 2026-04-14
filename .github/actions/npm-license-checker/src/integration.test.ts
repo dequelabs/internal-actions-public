@@ -206,6 +206,10 @@ for (const pm of packageManagers) {
         const names = packageNames(result)
 
         assert.ok(names.includes('is-odd'))
+        // is-number@6.0.0 is a transitive of is-odd@3.0.1. For npm/yarn it's
+        // hoisted; for pnpm it's in the `.pnpm` sibling layout. Both are now
+        // correctly resolved (pnpm via `pnpm licenses list`).
+        assert.ok(names.includes('is-number'))
         assert.ok(!names.includes('is-even'))
       })
 

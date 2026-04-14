@@ -56,11 +56,11 @@ jobs:
           - name: pnpm-single
             pm: pnpm
             install: 'pnpm install --frozen-lockfile'
-            expect: 'is-number@7.0.0 is-odd@3.0.1'
+            expect: 'is-number@6.0.0 is-number@7.0.0 is-odd@3.0.1'
           - name: pnpm-workspaces
             pm: pnpm
             install: 'pnpm install --frozen-lockfile'
-            expect: 'is-number@7.0.0 is-odd@3.0.1'
+            expect: 'is-number@6.0.0 is-number@7.0.0 is-odd@3.0.1'
           - name: yarn-single
             pm: yarn
             install: 'yarn install --frozen-lockfile'
