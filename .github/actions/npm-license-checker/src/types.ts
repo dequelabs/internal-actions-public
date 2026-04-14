@@ -51,6 +51,7 @@ export interface ScanPnpmOptions {
   filter?: string
   dependencyType: DependencyType
   recursive?: boolean
+  customFields?: CustomFields
 }
 
 export interface RunOptions {

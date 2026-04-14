@@ -175,7 +175,8 @@ export default async function run({
             cwd,
             filter,
             dependencyType,
-            recursive: isWorkspaceRoot
+            recursive: isWorkspaceRoot,
+            customFields
           })
           applyExcludesAndClarifications(result, excludeAndClarifyOpts)
           allResults.push(result)

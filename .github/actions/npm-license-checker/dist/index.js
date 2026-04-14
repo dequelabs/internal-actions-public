@@ -63713,7 +63713,8 @@ var external_child_process_ = __nccwpck_require__(5317);
 
 function scanPnpm_scanPnpm(opts) {
     const exec = opts.exec ?? defaultExec;
-    const readLicense = opts.readLicenseText ?? defaultReadLicenseText;
+    const readLicense = opts.readLicenseInfo ?? defaultReadLicenseInfo;
+    const readPkg = opts.readPackageJson ?? defaultReadPackageJson;
     const args = [];
     if (opts.filter) {
         args.push('--filter', opts.filter);
@@ -63743,12 +63744,12 @@ function scanPnpm_scanPnpm(opts) {
         throw new Error(`\`pnpm licenses list\` failed: ${e.message}` +
             (stderr ? `\n${stderr}` : ''));
     }
-    return parsePnpmOutput(stdout, readLicense);
+    return parsePnpmOutput(stdout, readLicense, readPkg, opts.customFields);
 }
 function defaultExec(file, args, opts) {
     return (0,external_child_process_.execFileSync)(file, args, opts);
 }
-function parsePnpmOutput(stdout, readLicense) {
+function parsePnpmOutput(stdout, readLicense, readPkg, customFields) {
     const parsed = JSON.parse(stdout);
     const result = {};
     for (const entries of Object.values(parsed)) {
@@ -63757,28 +63758,97 @@ function parsePnpmOutput(stdout, readLicense) {
                 const version = entry.versions[i];
                 const pkgPath = entry.paths[i];
                 const key = `${entry.name}@${version}`;
-                result[key] = {
+                const licenseInfo = pkgPath ? readLicense(pkgPath) : undefined;
+                const info = {
                     name: entry.name,
                     version,
                     licenses: entry.license,
-                    ...(entry.author && { publisher: entry.author }),
-                    ...(entry.homepage && { url: entry.homepage }),
                     ...(pkgPath && { path: pkgPath }),
-                    ...(pkgPath && {
-                        licenseText: readLicense(pkgPath) || ''
-                    })
+                    ...(licenseInfo && { licenseText: licenseInfo.text }),
+                    ...(licenseInfo && { licenseFile: licenseInfo.filePath })
                 };
+                if (pkgPath) {
+                    enrichFromPackageJson(info, readPkg(pkgPath), customFields);
+                }
+                if (info.licenseText) {
+                    const copyright = extractCopyright(info.licenseText);
+                    if (copyright)
+                        info.copyright = copyright;
+                }
+                result[key] = info;
             }
         }
     }
     return result;
 }
-function defaultReadLicenseText(pkgPath) {
+function enrichFromPackageJson(info, pkg, customFields) {
+    if (!pkg)
+        return;
+    const repo = pkg.repository;
+    const repoUrl = typeof repo === 'object' ? repo?.url : undefined;
+    if (typeof repoUrl === 'string') {
+        info.repository = repoUrl
+            .replace('git+ssh://git@', 'git://')
+            .replace('git+https://github.com', 'https://github.com')
+            .replace('git://github.com', 'https://github.com')
+            .replace('git@github.com:', 'https://github.com/')
+            .replace(/\.git$/, '');
+    }
+    const author = pkg.author;
+    if (typeof author === 'object' && author) {
+        if (author.name)
+            info.publisher = author.name;
+        if (author.email)
+            info.email = author.email;
+        if (author.url && !info.url)
+            info.url = author.url;
+    }
+    else if (typeof author === 'string' && author) {
+        const nameMatch = author.match(/^([^<(]+)/);
+        if (nameMatch)
+            info.publisher = nameMatch[1].trim();
+        const emailMatch = author.match(/<([^>]+)>/);
+        if (emailMatch)
+            info.email = emailMatch[1];
+        const urlMatch = author.match(/\(([^)]+)\)/);
+        if (urlMatch && !info.url)
+            info.url = urlMatch[1];
+    }
+    if (customFields) {
+        for (const [key, defaultVal] of Object.entries(customFields)) {
+            if (info[key] === undefined) {
+                const pkgVal = pkg[key];
+                info[key] = typeof pkgVal === 'string' ? pkgVal : defaultVal;
+            }
+        }
+    }
+}
+function extractCopyright(licenseText) {
+    const paragraphs = licenseText
+        .replace(/\r\n/g, '\n')
+        .split('\n\n')
+        .filter(p => p.startsWith('opyright', 1) &&
+        !p.startsWith('opyright notice', 1) &&
+        !p.startsWith('opyright and related rights', 1));
+    if (!paragraphs.length)
+        return undefined;
+    return paragraphs[0].replace(/\n/g, '. ').trim();
+}
+function defaultReadLicenseInfo(pkgPath) {
     try {
         const matched = licenseFiles(external_fs_default().readdirSync(pkgPath));
         if (!matched.length)
             return undefined;
-        return external_fs_default().readFileSync(external_path_default().join(pkgPath, matched[0]), 'utf8');
+        const filePath = external_path_default().join(pkgPath, matched[0]);
+        return { text: external_fs_default().readFileSync(filePath, 'utf8'), filePath };
+    }
+    catch {
+        return undefined;
+    }
+}
+function defaultReadPackageJson(pkgPath) {
+    try {
+        return JSON.parse(external_fs_default().readFileSync(external_path_default().join(pkgPath, 'package.json'), 'utf8'));
     }
     catch {
         return undefined;
@@ -63954,7 +64024,8 @@ async function run({ core, licenseChecker, expandWorkspaces = expandWorkspaces_e
                         cwd,
                         filter,
                         dependencyType,
-                        recursive: isWorkspaceRoot
+                        recursive: isWorkspaceRoot,
+                        customFields
                     });
                     applyExcludesAndClarifications(result, excludeAndClarifyOpts);
                     allResults.push(result);
