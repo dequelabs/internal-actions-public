@@ -1,9 +1,9 @@
 import fs from 'fs'
 import path from 'path'
-import { nodeModulesDir } from './nccEscape.ts'
 
 // Constructed at runtime to keep ncc's static analyzer from reaching for the
 // repo's own pnpm artifacts at build time.
+const NODE_MODULES = ['node', 'modules'].join('_')
 const PNPM_DIR = '.' + 'pnpm'
 const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.')
 const PNPM_LOCK = ['pnpm-lock', 'yaml'].join('.')
@@ -18,9 +18,7 @@ export default function detectPnpm(startPath: string): boolean {
   const root = path.parse(dir).root
 
   while (dir !== root) {
-    if (
-      fs.existsSync(dir + path.sep + nodeModulesDir() + path.sep + PNPM_DIR)
-    ) {
+    if (fs.existsSync(dir + path.sep + NODE_MODULES + path.sep + PNPM_DIR)) {
       return true
     }
     if (fs.existsSync(dir + path.sep + PNPM_WORKSPACE)) return true

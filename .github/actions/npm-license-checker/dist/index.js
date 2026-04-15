@@ -51965,24 +51965,10 @@ async function checkLicenses(licenseChecker, options, core) {
     });
 }
 
-;// CONCATENATED MODULE: ./src/nccEscape.ts
-const ENCODED = Buffer.from([
-    0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x00,
-    0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x73
-])
-    .toString('utf8')
-    .split('\0');
-function pkgJsonFilename() {
-    return ENCODED[0];
-}
-function nodeModulesDir() {
-    return ENCODED[1];
-}
-
 ;// CONCATENATED MODULE: ./src/detectPnpm.ts
 
 
-
+const NODE_MODULES = ['node', 'modules'].join('_');
 const PNPM_DIR = '.' + 'pnpm';
 const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.');
 const PNPM_LOCK = ['pnpm-lock', 'yaml'].join('.');
@@ -51990,7 +51976,7 @@ function detectPnpm_detectPnpm(startPath) {
     let dir = external_path_default().resolve(startPath);
     const root = external_path_default().parse(dir).root;
     while (dir !== root) {
-        if (external_fs_default().existsSync(dir + (external_path_default()).sep + nodeModulesDir() + (external_path_default()).sep + PNPM_DIR)) {
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + NODE_MODULES + (external_path_default()).sep + PNPM_DIR)) {
             return true;
         }
         if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
@@ -52019,7 +52005,7 @@ var external_child_process_ = __nccwpck_require__(5317);
 
 
 
-
+const PKG_JSON = 'package' + '.json';
 function scanPnpm_scanPnpm(opts) {
     const exec = opts.exec ?? defaultExec;
     const readLicense = opts.readLicenseInfo ?? defaultReadLicenseInfo;
@@ -52159,7 +52145,7 @@ function defaultReadLicenseInfo(pkgPath) {
 }
 function defaultReadPackageJson(pkgPath) {
     try {
-        return JSON.parse(external_fs_default().readFileSync(external_path_default().join(pkgPath, pkgJsonFilename()), 'utf8'));
+        return JSON.parse(external_fs_default().readFileSync(pkgPath + (external_path_default()).sep + PKG_JSON, 'utf8'));
     }
     catch {
         return undefined;

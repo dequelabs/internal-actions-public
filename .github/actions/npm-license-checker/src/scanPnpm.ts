@@ -3,8 +3,11 @@ import fs from 'fs'
 import path from 'path'
 // @ts-expect-error No type declarations for this internal module
 import { licenseFiles } from 'license-checker-rseidelsohn/lib/license-files.js'
-import { pkgJsonFilename } from './nccEscape.ts'
 import type { CustomFields, DependencyType, ModuleInfos } from './types.ts'
+
+// Built at runtime so ncc doesn't pattern-match `path.join(x, 'package.json')`
+// and rewrite it to point at a bundled asset.
+const PKG_JSON = 'package' + '.json'
 
 interface PnpmLicenseEntry {
   name: string
@@ -234,9 +237,7 @@ function defaultReadPackageJson(
   pkgPath: string
 ): Record<string, unknown> | undefined {
   try {
-    return JSON.parse(
-      fs.readFileSync(path.join(pkgPath, pkgJsonFilename()), 'utf8')
-    )
+    return JSON.parse(fs.readFileSync(pkgPath + path.sep + PKG_JSON, 'utf8'))
   } catch {
     return undefined
   }
