@@ -1,41 +1,37 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+// @ts-expect-error No type declarations for this internal module
+import { licenseFiles } from 'license-checker-rseidelsohn/lib/license-files.js'
 import type { ResolvedNodeModules } from './types.ts'
 import { pkgJsonFilename, nodeModulesDir } from './nccEscape.ts'
 
 export default function resolveNodeModules(
   startPath: string
 ): ResolvedNodeModules {
-  // Use plain string concat to avoid ncc's asset-tracing rewrites.
   const localNodeModules = startPath + path.sep + nodeModulesDir()
   const hasLocalNodeModules = fs.existsSync(localNodeModules)
   const ancestorNodeModules = findAncestorNodeModules(startPath)
 
-  // Local node_modules covers this path — scan directly. This handles:
-  //   - single projects (local exists, no ancestor relevant)
-  //   - pnpm workspace members (own node_modules)
-  //   - create-temp-package-json output (local is a symlink to ancestor)
-  // Partial hoisting (local has some deps, rest are hoisted to ancestor) is a
-  // known limitation: we'd miss the hoisted deps. Callers that need this can
-  // install via pnpm or set up a merged node_modules themselves.
-  if (hasLocalNodeModules) {
-    return { scanPath: startPath, cleanup: () => {} }
-  }
-
   // No local node_modules and no ancestor — scan as-is, let the library error
-  if (!ancestorNodeModules) {
+  if (!hasLocalNodeModules && !ancestorNodeModules) {
     return { scanPath: startPath, cleanup: () => {} }
   }
 
-  // No local node_modules but ancestor exists (npm/yarn workspace member with
-  // all deps hoisted to the root). Create a temp dir with the workspace's
-  // package.json and a single symlink to the ancestor's node_modules.
+  // Local node_modules exists and no ancestor — scan directly (single project
+  // or pnpm workspace where deps are in the workspace's own node_modules)
+  if (hasLocalNodeModules && !ancestorNodeModules) {
+    return { scanPath: startPath, cleanup: () => {} }
+  }
+
+  // Ancestor exists (with or without local overrides). Build a temp dir with
+  // shallow copies of package metadata (package.json + license files) from
+  // the ancestor, overlaid with any local overrides.
   //
-  // We symlink the whole directory (not per-package) because read-installed-
-  // packages sets obj.link when a package path lstats as a symlink, which
-  // stops its dependency walk-up. A single node_modules-level symlink keeps
-  // individual packages looking like regular directories.
+  // We use COPIES rather than symlinks because read-installed-packages sets
+  // obj.link on any path where lstat reports a symbolic link, which stops its
+  // dependency walk-up and prevents resolution of hoisted transitive deps.
+  // Copies lstat as regular files/dirs, keeping walk-up intact.
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'license-scan-'))
 
   const srcPkgJson = startPath + path.sep + pkgJsonFilename()
@@ -43,11 +39,16 @@ export default function resolveNodeModules(
     fs.copyFileSync(srcPkgJson, tempDir + path.sep + pkgJsonFilename())
   }
 
-  fs.symlinkSync(
-    ancestorNodeModules,
-    tempDir + path.sep + nodeModulesDir(),
-    'dir'
-  )
+  const tempNodeModules = tempDir + path.sep + nodeModulesDir()
+  fs.mkdirSync(tempNodeModules)
+
+  // Copy ancestor's packages first (the hoisted base)
+  shallowCopyNodeModules(ancestorNodeModules!, tempNodeModules)
+
+  // Overlay local overrides (for partial hoisting — local wins)
+  if (hasLocalNodeModules) {
+    shallowCopyNodeModules(localNodeModules, tempNodeModules)
+  }
 
   return {
     scanPath: tempDir,
@@ -70,4 +71,79 @@ function findAncestorNodeModules(startPath: string): string | null {
   }
 
   return null
+}
+
+// ---------------------------------------------------------------------------
+// Shallow copy — copies only package.json + license files for each package,
+// NOT the full package content. This is enough for license-checker to scan.
+// ---------------------------------------------------------------------------
+
+function shallowCopyNodeModules(source: string, target: string): void {
+  let entries: string[]
+  try {
+    entries = fs.readdirSync(source)
+  } catch {
+    return
+  }
+
+  for (const entry of entries) {
+    if (entry.startsWith('.')) continue
+
+    const srcPath = path.join(source, entry)
+    const tgtPath = path.join(target, entry)
+
+    if (entry.startsWith('@')) {
+      // Scoped package dir — recurse into sub-entries
+      fs.mkdirSync(tgtPath, { recursive: true })
+      let scopedEntries: string[]
+      try {
+        scopedEntries = fs.readdirSync(srcPath)
+      } catch {
+        continue
+      }
+      for (const sub of scopedEntries) {
+        if (sub.startsWith('.')) continue
+        copyPackageMetadata(path.join(srcPath, sub), path.join(tgtPath, sub))
+      }
+    } else {
+      copyPackageMetadata(srcPath, tgtPath)
+    }
+  }
+}
+
+function copyPackageMetadata(srcPkg: string, tgtPkg: string): void {
+  // Resolve symlinks so we read from the real package dir
+  let realSrc: string
+  try {
+    realSrc = fs.realpathSync(srcPkg)
+  } catch {
+    return // broken symlink or inaccessible
+  }
+
+  if (!fs.statSync(realSrc).isDirectory()) return
+
+  fs.mkdirSync(tgtPkg, { recursive: true })
+
+  // Copy package.json
+  const pkgJson = path.join(realSrc, pkgJsonFilename())
+  if (fs.existsSync(pkgJson)) {
+    fs.copyFileSync(pkgJson, path.join(tgtPkg, pkgJsonFilename()))
+  }
+
+  // Copy license files
+  const matched = licenseFiles(fs.readdirSync(realSrc)) as string[]
+  for (const file of matched) {
+    const src = path.join(realSrc, file)
+    if (fs.existsSync(src) && fs.statSync(src).isFile()) {
+      fs.copyFileSync(src, path.join(tgtPkg, file))
+    }
+  }
+
+  // Recursively handle nested node_modules (version conflicts)
+  const nestedNm = path.join(realSrc, nodeModulesDir())
+  if (fs.existsSync(nestedNm)) {
+    const nestedTarget = path.join(tgtPkg, nodeModulesDir())
+    fs.mkdirSync(nestedTarget, { recursive: true })
+    shallowCopyNodeModules(nestedNm, nestedTarget)
+  }
 }

@@ -63635,14 +63635,15 @@ var external_os_default = /*#__PURE__*/__nccwpck_require__.n(external_os_);
 
 
 
+
 function resolveNodeModules_resolveNodeModules(startPath) {
     const localNodeModules = startPath + (external_path_default()).sep + nodeModulesDir();
     const hasLocalNodeModules = external_fs_default().existsSync(localNodeModules);
     const ancestorNodeModules = findAncestorNodeModules(startPath);
-    if (hasLocalNodeModules) {
+    if (!hasLocalNodeModules && !ancestorNodeModules) {
         return { scanPath: startPath, cleanup: () => { } };
     }
-    if (!ancestorNodeModules) {
+    if (hasLocalNodeModules && !ancestorNodeModules) {
         return { scanPath: startPath, cleanup: () => { } };
     }
     const tempDir = external_fs_default().mkdtempSync(external_path_default().join(external_os_default().tmpdir(), 'license-scan-'));
@@ -63650,7 +63651,12 @@ function resolveNodeModules_resolveNodeModules(startPath) {
     if (external_fs_default().existsSync(srcPkgJson)) {
         external_fs_default().copyFileSync(srcPkgJson, tempDir + (external_path_default()).sep + pkgJsonFilename());
     }
-    external_fs_default().symlinkSync(ancestorNodeModules, tempDir + (external_path_default()).sep + nodeModulesDir(), 'dir');
+    const tempNodeModules = tempDir + (external_path_default()).sep + nodeModulesDir();
+    external_fs_default().mkdirSync(tempNodeModules);
+    shallowCopyNodeModules(ancestorNodeModules, tempNodeModules);
+    if (hasLocalNodeModules) {
+        shallowCopyNodeModules(localNodeModules, tempNodeModules);
+    }
     return {
         scanPath: tempDir,
         cleanup: () => {
@@ -63669,6 +63675,68 @@ function findAncestorNodeModules(startPath) {
         dir = external_path_default().dirname(dir);
     }
     return null;
+}
+function shallowCopyNodeModules(source, target) {
+    let entries;
+    try {
+        entries = external_fs_default().readdirSync(source);
+    }
+    catch {
+        return;
+    }
+    for (const entry of entries) {
+        if (entry.startsWith('.'))
+            continue;
+        const srcPath = external_path_default().join(source, entry);
+        const tgtPath = external_path_default().join(target, entry);
+        if (entry.startsWith('@')) {
+            external_fs_default().mkdirSync(tgtPath, { recursive: true });
+            let scopedEntries;
+            try {
+                scopedEntries = external_fs_default().readdirSync(srcPath);
+            }
+            catch {
+                continue;
+            }
+            for (const sub of scopedEntries) {
+                if (sub.startsWith('.'))
+                    continue;
+                copyPackageMetadata(external_path_default().join(srcPath, sub), external_path_default().join(tgtPath, sub));
+            }
+        }
+        else {
+            copyPackageMetadata(srcPath, tgtPath);
+        }
+    }
+}
+function copyPackageMetadata(srcPkg, tgtPkg) {
+    let realSrc;
+    try {
+        realSrc = external_fs_default().realpathSync(srcPkg);
+    }
+    catch {
+        return;
+    }
+    if (!external_fs_default().statSync(realSrc).isDirectory())
+        return;
+    external_fs_default().mkdirSync(tgtPkg, { recursive: true });
+    const pkgJson = external_path_default().join(realSrc, pkgJsonFilename());
+    if (external_fs_default().existsSync(pkgJson)) {
+        external_fs_default().copyFileSync(pkgJson, external_path_default().join(tgtPkg, pkgJsonFilename()));
+    }
+    const matched = licenseFiles(external_fs_default().readdirSync(realSrc));
+    for (const file of matched) {
+        const src = external_path_default().join(realSrc, file);
+        if (external_fs_default().existsSync(src) && external_fs_default().statSync(src).isFile()) {
+            external_fs_default().copyFileSync(src, external_path_default().join(tgtPkg, file));
+        }
+    }
+    const nestedNm = external_path_default().join(realSrc, nodeModulesDir());
+    if (external_fs_default().existsSync(nestedNm)) {
+        const nestedTarget = external_path_default().join(tgtPkg, nodeModulesDir());
+        external_fs_default().mkdirSync(nestedTarget, { recursive: true });
+        shallowCopyNodeModules(nestedNm, nestedTarget);
+    }
 }
 
 ;// CONCATENATED MODULE: ./src/detectPnpm.ts
