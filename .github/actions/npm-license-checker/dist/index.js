@@ -50454,6 +50454,7 @@ var treeify = __nccwpck_require__(610);
 var external_crypto_ = __nccwpck_require__(6982);
 // EXTERNAL MODULE: ../../../node_modules/semver/index.js
 var semver = __nccwpck_require__(530);
+var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
 // EXTERNAL MODULE: ../../../node_modules/lodash.clonedeep/index.js
 var lodash_clonedeep = __nccwpck_require__(8133);
 ;// CONCATENATED MODULE: ../../../node_modules/license-checker-rseidelsohn/lib/licenseCheckerHelpers.js
@@ -51964,6 +51965,297 @@ async function checkLicenses(licenseChecker, options, core) {
     });
 }
 
+;// CONCATENATED MODULE: ./src/nccEscape.ts
+const ENCODED = Buffer.from([
+    0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x00,
+    0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x73
+])
+    .toString('utf8')
+    .split('\0');
+function pkgJsonFilename() {
+    return ENCODED[0];
+}
+function nodeModulesDir() {
+    return ENCODED[1];
+}
+
+;// CONCATENATED MODULE: ./src/detectPnpm.ts
+
+
+
+const PNPM_DIR = '.' + 'pnpm';
+const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.');
+const PNPM_LOCK = ['pnpm-lock', 'yaml'].join('.');
+function detectPnpm_detectPnpm(startPath) {
+    let dir = external_path_default().resolve(startPath);
+    const root = external_path_default().parse(dir).root;
+    while (dir !== root) {
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + nodeModulesDir() + (external_path_default()).sep + PNPM_DIR)) {
+            return true;
+        }
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+            return true;
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_LOCK))
+            return true;
+        dir = external_path_default().dirname(dir);
+    }
+    return false;
+}
+function detectPnpm_findPnpmWorkspaceRoot(startPath) {
+    let dir = external_path_default().resolve(startPath);
+    const root = external_path_default().parse(dir).root;
+    while (dir !== root) {
+        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+            return dir;
+        dir = external_path_default().dirname(dir);
+    }
+    return null;
+}
+
+// EXTERNAL MODULE: external "child_process"
+var external_child_process_ = __nccwpck_require__(5317);
+;// CONCATENATED MODULE: ./src/scanPnpm.ts
+
+
+
+
+
+function scanPnpm_scanPnpm(opts) {
+    const exec = opts.exec ?? defaultExec;
+    const readLicense = opts.readLicenseInfo ?? defaultReadLicenseInfo;
+    const readPkg = opts.readPackageJson ?? defaultReadPackageJson;
+    const args = [];
+    if (opts.filter) {
+        args.push('--filter', opts.filter);
+    }
+    if (opts.recursive) {
+        args.push('-r');
+    }
+    args.push('licenses', 'list', '--json', '--long');
+    if (opts.dependencyType === 'production')
+        args.push('--prod');
+    if (opts.dependencyType === 'development')
+        args.push('--dev');
+    let stdout;
+    try {
+        stdout = exec('pnpm', args, {
+            cwd: opts.cwd,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+    }
+    catch (err) {
+        const e = err;
+        if (e.code === 'ENOENT') {
+            throw new Error('pnpm is required to scan a pnpm-managed project but was not found ' +
+                'on PATH. Install pnpm in your workflow (for example, add a step ' +
+                '"uses: pnpm/action-setup@v4") and retry.');
+        }
+        const stderr = (e.stderr || '').toString().trim();
+        throw new Error(`\`pnpm licenses list\` failed: ${e.message}` +
+            (stderr ? `\n${stderr}` : ''));
+    }
+    return parsePnpmOutput(stdout, readLicense, readPkg, opts.customFields);
+}
+function defaultExec(file, args, opts) {
+    return (0,external_child_process_.execFileSync)(file, args, opts);
+}
+function parsePnpmOutput(stdout, readLicense, readPkg, customFields) {
+    const parsed = JSON.parse(stdout);
+    const result = {};
+    for (const entries of Object.values(parsed)) {
+        for (const entry of entries) {
+            for (let i = 0; i < entry.versions.length; i++) {
+                const version = entry.versions[i];
+                const pkgPath = entry.paths[i];
+                const key = `${entry.name}@${version}`;
+                const licenseInfo = pkgPath ? readLicense(pkgPath) : undefined;
+                const info = {
+                    name: entry.name,
+                    version,
+                    licenses: entry.license,
+                    ...(pkgPath && { path: pkgPath }),
+                    ...(licenseInfo && { licenseText: licenseInfo.text }),
+                    ...(licenseInfo && { licenseFile: licenseInfo.filePath })
+                };
+                if (pkgPath) {
+                    enrichFromPackageJson(info, readPkg(pkgPath), customFields);
+                }
+                if (info.licenseText) {
+                    const copyright = extractCopyright(info.licenseText);
+                    if (copyright)
+                        info.copyright = copyright;
+                }
+                result[key] = info;
+            }
+        }
+    }
+    return result;
+}
+function enrichFromPackageJson(info, pkg, customFields) {
+    if (!pkg)
+        return;
+    const repo = pkg.repository;
+    const repoUrl = typeof repo === 'object' ? repo?.url : undefined;
+    if (typeof repoUrl === 'string') {
+        info.repository = repoUrl
+            .replace('git+ssh://git@', 'git://')
+            .replace('git+https://github.com', 'https://github.com')
+            .replace('git://github.com', 'https://github.com')
+            .replace('git@github.com:', 'https://github.com/')
+            .replace(/\.git$/, '');
+    }
+    const author = pkg.author;
+    if (typeof author === 'object' && author) {
+        if (author.name)
+            info.publisher = author.name;
+        if (author.email)
+            info.email = author.email;
+        if (author.url && !info.url)
+            info.url = author.url;
+    }
+    else if (typeof author === 'string' && author) {
+        const nameMatch = author.match(/^([^<(]+)/);
+        if (nameMatch)
+            info.publisher = nameMatch[1].trim();
+        const emailMatch = author.match(/<([^>]+)>/);
+        if (emailMatch)
+            info.email = emailMatch[1];
+        const urlMatch = author.match(/\(([^)]+)\)/);
+        if (urlMatch && !info.url)
+            info.url = urlMatch[1];
+    }
+    if (customFields) {
+        for (const [key, defaultVal] of Object.entries(customFields)) {
+            if (info[key] === undefined) {
+                const pkgVal = pkg[key];
+                info[key] = typeof pkgVal === 'string' ? pkgVal : defaultVal;
+            }
+        }
+    }
+}
+function extractCopyright(licenseText) {
+    const paragraphs = licenseText
+        .replace(/\r\n/g, '\n')
+        .split('\n\n')
+        .filter(p => p.startsWith('opyright', 1) &&
+        !p.startsWith('opyright notice', 1) &&
+        !p.startsWith('opyright and related rights', 1));
+    if (!paragraphs.length)
+        return undefined;
+    return paragraphs[0].replace(/\n/g, '. ').trim();
+}
+function defaultReadLicenseInfo(pkgPath) {
+    try {
+        const matched = licenseFiles(external_fs_default().readdirSync(pkgPath));
+        if (!matched.length)
+            return undefined;
+        const filePath = external_path_default().join(pkgPath, matched[0]);
+        return { text: external_fs_default().readFileSync(filePath, 'utf8'), filePath };
+    }
+    catch {
+        return undefined;
+    }
+}
+function defaultReadPackageJson(pkgPath) {
+    try {
+        return JSON.parse(external_fs_default().readFileSync(external_path_default().join(pkgPath, pkgJsonFilename()), 'utf8'));
+    }
+    catch {
+        return undefined;
+    }
+}
+
+;// CONCATENATED MODULE: ./src/applyExcludesAndClarifications.ts
+
+
+function applyExcludesAndClarifications(merged, options) {
+    const excludeNames = splitList(options.excludePackages);
+    const excludePrefixes = splitList(options.excludePackagesStartingWith);
+    if (excludeNames.length || excludePrefixes.length) {
+        for (const key of Object.keys(merged)) {
+            const name = nameFromKey(key);
+            if (excludeNames.includes(name) ||
+                excludePrefixes.some(prefix => name.startsWith(prefix))) {
+                delete merged[key];
+            }
+        }
+    }
+    if (options.clarificationsPath) {
+        const raw = external_fs_default().readFileSync(options.clarificationsPath, 'utf8');
+        const clarifications = JSON.parse(raw);
+        for (const [spec, override] of Object.entries(clarifications)) {
+            const at = spec.lastIndexOf('@');
+            if (at <= 0)
+                continue;
+            const targetName = spec.substring(0, at);
+            const range = spec.substring(at + 1);
+            for (const [key, info] of Object.entries(merged)) {
+                const at2 = key.lastIndexOf('@');
+                if (at2 <= 0)
+                    continue;
+                const keyName = key.substring(0, at2);
+                const keyVersion = key.substring(at2 + 1);
+                if (keyName === targetName &&
+                    semver_default().valid(keyVersion) &&
+                    semver_default().satisfies(keyVersion, range)) {
+                    Object.assign(info, override);
+                }
+            }
+        }
+    }
+}
+function splitList(value) {
+    if (!value)
+        return [];
+    return value
+        .split(';')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+}
+function nameFromKey(key) {
+    const at = key.lastIndexOf('@');
+    return at > 0 ? key.substring(0, at) : key;
+}
+
+;// CONCATENATED MODULE: ./src/checkOnlyAllow.ts
+function checkOnlyAllow(merged, onlyAllow) {
+    if (!onlyAllow.trim().length)
+        return;
+    const allowedLicenses = onlyAllow
+        .split(';')
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+    const violations = [];
+    for (const [packageName, info] of Object.entries(merged)) {
+        const currentLicense = Array.isArray(info.licenses)
+            ? info.licenses.join(', ')
+            : info.licenses || 'UNKNOWN';
+        const isAllowed = allowedLicenses.some(allowed => currentLicense.includes(allowed));
+        if (!isAllowed) {
+            violations.push(`"${packageName}" has license "${currentLicense}"`);
+        }
+    }
+    if (violations.length) {
+        throw new Error(`The following packages have licenses not permitted by the onlyAllow list:\n${violations.join('\n')}`);
+    }
+}
+
+;// CONCATENATED MODULE: ./src/formatOutput.ts
+function formatOutput(licenseChecker, merged, format, customFields) {
+    switch (format) {
+        case 'csv':
+            return licenseChecker.asCSV(merged, customFields);
+        case 'markdown':
+            return licenseChecker.asMarkDown(merged, customFields);
+        case 'plainVertical':
+            return licenseChecker.asPlainVertical(merged);
+        case 'json':
+        default:
+            return JSON.stringify(merged, null, 2);
+    }
+}
+
 ;// CONCATENATED MODULE: ./src/types.ts
 const DEPENDENCY_TYPES = ['production', 'development', 'all'];
 const DETAILS_OUTPUT_FORMATS = [
@@ -51978,7 +52270,12 @@ const DETAILS_OUTPUT_FORMATS = [
 
 
 
-async function run({ core, licenseChecker }) {
+
+
+
+
+
+async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, findPnpmWorkspaceRoot = detectPnpm_findPnpmWorkspaceRoot, scanPnpm = scanPnpm_scanPnpm }) {
     try {
         const dependencyType = core.getInput('dependency-type');
         const startPath = core.getInput('start-path');
@@ -52026,6 +52323,56 @@ async function run({ core, licenseChecker }) {
                 core.setFailed(`Error reading or parsing customFieldsPath: ${error.message}`);
                 return;
             }
+        }
+        const absPath = external_path_default().resolve(startPath);
+        if (detectPnpm(absPath)) {
+            let result;
+            try {
+                const wsRoot = findPnpmWorkspaceRoot(absPath);
+                const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath;
+                const isWorkspaceRoot = wsRoot !== null && wsRoot === absPath;
+                const cwd = isWorkspaceMember ? wsRoot : absPath;
+                const filter = isWorkspaceMember
+                    ? './' + external_path_default().relative(wsRoot, absPath)
+                    : undefined;
+                result = scanPnpm({
+                    cwd,
+                    filter,
+                    dependencyType,
+                    recursive: isWorkspaceRoot,
+                    customFields
+                });
+            }
+            catch (error) {
+                core.setFailed(error.message);
+                return;
+            }
+            applyExcludesAndClarifications(result, {
+                ...(excludePackages.trim().length && { excludePackages }),
+                ...(excludePackagesStartingWith.trim().length && {
+                    excludePackagesStartingWith
+                }),
+                ...(clarificationsPath.trim().length && { clarificationsPath })
+            });
+            try {
+                checkOnlyAllow(result, onlyAllow);
+            }
+            catch (error) {
+                core.setFailed(error.message);
+                return;
+            }
+            if (detailsOutputPath) {
+                const formatted = formatOutput(licenseChecker, result, detailsOutputFormat, customFields);
+                external_fs_default().writeFileSync(external_path_default().resolve(detailsOutputPath), formatted, 'utf8');
+            }
+            const summary = licenseChecker.asSummary(result);
+            if (summary.length) {
+                core.info(`License checker summary:\n${summary}`);
+            }
+            else {
+                throw new Error('No licenses found');
+            }
+            return;
         }
         const options = {
             startPath,

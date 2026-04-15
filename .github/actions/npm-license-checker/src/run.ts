@@ -1,6 +1,13 @@
 import fs from 'fs'
 import path from 'path'
 import checkLicenses from './checkLicenses.ts'
+import defaultDetectPnpm, {
+  findPnpmWorkspaceRoot as defaultFindPnpmWorkspaceRoot
+} from './detectPnpm.ts'
+import defaultScanPnpm from './scanPnpm.ts'
+import applyExcludesAndClarifications from './applyExcludesAndClarifications.ts'
+import checkOnlyAllow from './checkOnlyAllow.ts'
+import formatOutput from './formatOutput.ts'
 import {
   DEPENDENCY_TYPES,
   DETAILS_OUTPUT_FORMATS,
@@ -8,10 +15,17 @@ import {
   type RunOptions,
   type DetailsOutputFormat,
   type CustomFields,
-  type CheckLicensesOptions
+  type CheckLicensesOptions,
+  type ModuleInfos
 } from './types.ts'
 
-export default async function run({ core, licenseChecker }: RunOptions) {
+export default async function run({
+  core,
+  licenseChecker,
+  detectPnpm = defaultDetectPnpm,
+  findPnpmWorkspaceRoot = defaultFindPnpmWorkspaceRoot,
+  scanPnpm = defaultScanPnpm
+}: RunOptions) {
   try {
     const dependencyType = core.getInput('dependency-type') as DependencyType
     const startPath = core.getInput('start-path')
@@ -89,6 +103,69 @@ export default async function run({ core, licenseChecker }: RunOptions) {
         )
         return
       }
+    }
+
+    const absPath = path.resolve(startPath)
+
+    // Route pnpm-managed projects to `pnpm licenses list` because the
+    // library's `read-installed-packages` cannot walk pnpm's `.pnpm`
+    // sibling layout. Everything else uses the library's normal flow.
+    if (detectPnpm(absPath)) {
+      let result: ModuleInfos
+      try {
+        const wsRoot = findPnpmWorkspaceRoot(absPath)
+        const isWorkspaceMember = wsRoot !== null && wsRoot !== absPath
+        const isWorkspaceRoot = wsRoot !== null && wsRoot === absPath
+        const cwd = isWorkspaceMember ? wsRoot : absPath
+        const filter = isWorkspaceMember
+          ? './' + path.relative(wsRoot, absPath)
+          : undefined
+
+        result = scanPnpm({
+          cwd,
+          filter,
+          dependencyType,
+          recursive: isWorkspaceRoot,
+          customFields
+        })
+      } catch (error) {
+        core.setFailed((error as Error).message)
+        return
+      }
+
+      // pnpm CLI doesn't natively support our exclude/clarifications inputs.
+      applyExcludesAndClarifications(result, {
+        ...(excludePackages.trim().length && { excludePackages }),
+        ...(excludePackagesStartingWith.trim().length && {
+          excludePackagesStartingWith
+        }),
+        ...(clarificationsPath.trim().length && { clarificationsPath })
+      })
+
+      try {
+        checkOnlyAllow(result, onlyAllow)
+      } catch (error) {
+        core.setFailed((error as Error).message)
+        return
+      }
+
+      if (detailsOutputPath) {
+        const formatted = formatOutput(
+          licenseChecker,
+          result,
+          detailsOutputFormat,
+          customFields
+        )
+        fs.writeFileSync(path.resolve(detailsOutputPath), formatted, 'utf8')
+      }
+
+      const summary = licenseChecker.asSummary(result)
+      if (summary.length) {
+        core.info(`License checker summary:\n${summary}`)
+      } else {
+        throw new Error('No licenses found')
+      }
+      return
     }
 
     const options: CheckLicensesOptions = {

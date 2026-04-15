@@ -5,6 +5,16 @@ export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type ModuleInfos = licenseChecker.ModuleInfos
 export type LicenseChecker = Pick<typeof licenseChecker, 'init'> & {
   asSummary: (moduleInfos: licenseChecker.ModuleInfos) => string
+  asCSV: (
+    sorted: licenseChecker.ModuleInfos,
+    customFormat?: CustomFields,
+    csvComponentPrefix?: string
+  ) => string
+  asMarkDown: (
+    sorted: licenseChecker.ModuleInfos,
+    customFormat?: CustomFields
+  ) => string
+  asPlainVertical: (sorted: licenseChecker.ModuleInfos) => string
 }
 
 export const DEPENDENCY_TYPES = ['production', 'development', 'all'] as const
@@ -34,7 +44,18 @@ export type CheckLicensesOptions = {
   detailsOutputFormat: DetailsOutputFormat
 }
 
+export interface ScanPnpmOptions {
+  cwd: string
+  filter?: string
+  dependencyType: DependencyType
+  recursive?: boolean
+  customFields?: CustomFields
+}
+
 export interface RunOptions {
   core: Core
   licenseChecker: LicenseChecker
+  detectPnpm?: (startPath: string) => boolean
+  findPnpmWorkspaceRoot?: (startPath: string) => string | null
+  scanPnpm?: (opts: ScanPnpmOptions) => ModuleInfos
 }

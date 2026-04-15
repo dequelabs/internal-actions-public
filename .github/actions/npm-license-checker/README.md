@@ -2,6 +2,19 @@
 
 A GitHub action to check 3rd-party licenses and output a report of licenses used
 
+## pnpm support
+
+When the scanned path is inside a pnpm-managed project (detected via a
+`node_modules/.pnpm/` dir, a `pnpm-workspace.yaml`, or a `pnpm-lock.yaml`),
+the action delegates scanning to `pnpm licenses list` rather than the
+`license-checker-rseidelsohn` library. pnpm's `.pnpm` sibling-symlink
+layout is not walkable by the library's dependency resolver, so the
+library would miss most packages.
+
+This means `pnpm` must be on `PATH` when the action runs. In a GitHub
+workflow, add `uses: pnpm/action-setup@v4` before this action. The action
+will emit an actionable error if `pnpm` is missing.
+
 ## Inputs
 
 | Name                             | Required | Description                                                                                                                          | Default                               |
