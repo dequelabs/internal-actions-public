@@ -145,7 +145,9 @@ function parsePnpmOutput(
 }
 
 // ---------------------------------------------------------------------------
-// Field enrichment from package.json
+// Field enrichment from package.json — mirrors the per-module population in
+// license-checker-rseidelsohn's `recursivelyCollectAllDependencies` (in
+// lib/index.js) so that pnpm output has the same shape as the library's.
 // ---------------------------------------------------------------------------
 
 function enrichFromPackageJson(
@@ -156,7 +158,9 @@ function enrichFromPackageJson(
 ): void {
   if (!pkg) return
 
-  // repository — normalize git URLs to https
+  // repository — mirrors getRepositoryUrl() in
+  // license-checker-rseidelsohn/lib/indexHelpers.js. Normalizes git+ssh,
+  // git+https, git://, and git@ URLs to plain https and strips ".git".
   const repo = pkg.repository as { url?: string } | string | undefined
   const repoUrl = typeof repo === 'object' ? repo?.url : undefined
   if (typeof repoUrl === 'string') {
@@ -168,7 +172,9 @@ function enrichFromPackageJson(
       .replace(/\.git$/, '')
   }
 
-  // author → publisher, email, url
+  // author → publisher/email/url — mirrors getAuthorDetails() in
+  // license-checker-rseidelsohn/lib/indexHelpers.js. Handles both the object
+  // form ({name, email, url}) and the "Name <email> (url)" string form.
   const author = pkg.author as
     | { name?: string; email?: string; url?: string }
     | string
@@ -178,7 +184,6 @@ function enrichFromPackageJson(
     if (author.email) info.email = author.email
     if (author.url && !info.url) info.url = author.url
   } else if (typeof author === 'string' && author) {
-    // Parse "Name <email> (url)" format
     const nameMatch = author.match(/^([^<(]+)/)
     if (nameMatch) info.publisher = nameMatch[1].trim()
     const emailMatch = author.match(/<([^>]+)>/)
@@ -187,7 +192,10 @@ function enrichFromPackageJson(
     if (urlMatch && !info.url) info.url = urlMatch[1]
   }
 
-  // customFormat keys — look up from package.json, fall back to default
+  // customFormat keys — mirrors the `Object.keys(options.customFormat)`
+  // fallthrough block near the end of `recursivelyCollectAllDependencies` in
+  // license-checker-rseidelsohn/lib/index.js: for each key, use the value
+  // from package.json if it's a string, else the caller-supplied default.
   if (customFields) {
     for (const [key, defaultVal] of Object.entries(customFields)) {
       if (info[key] === undefined) {
@@ -199,7 +207,10 @@ function enrichFromPackageJson(
 }
 
 // ---------------------------------------------------------------------------
-// Copyright extraction — matches the library's getLinesWithCopyright logic
+// Copyright extraction — ports `getLinesWithCopyright` from
+// license-checker-rseidelsohn/lib/indexHelpers.js. Keeps the same paragraph-
+// split + "opyright"-prefix heuristic so the `copyright` field matches what
+// the library produces on the npm/yarn path.
 // ---------------------------------------------------------------------------
 
 function extractCopyright(licenseText: string): string | undefined {
