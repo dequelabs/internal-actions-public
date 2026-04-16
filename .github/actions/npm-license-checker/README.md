@@ -15,6 +15,13 @@ This means `pnpm` must be on `PATH` when the action runs. In a GitHub
 workflow, add `uses: pnpm/action-setup@v4` before this action. The action
 will emit an actionable error if `pnpm` is missing.
 
+On pnpm, `start-path` can point directly at an individual workspace
+package (for example `./packages/server`) and the action will scope the
+scan to that package's production/development dependencies. You do **not**
+need `create-temp-package-json-v1` for pnpm monorepos — use it only for
+npm/yarn monorepos, where `start-path` at a workspace subdirectory can't
+see hoisted dependencies in the root `node_modules`.
+
 ## Inputs
 
 | Name                             | Required | Description                                                                                                                          | Default                               |
@@ -102,7 +109,10 @@ jobs:
           file_pattern: './app/credits.json'
 ```
 
-## Example usage if a repo uses [workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces)
+## Example usage if a repo uses npm/yarn [workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces)
+
+_(Pnpm workspaces don't need this — point `start-path` directly at the
+workspace package instead. See the [pnpm support](#pnpm-support) section.)_
 
 ```yaml
 name: Generate Third-Party Credits
