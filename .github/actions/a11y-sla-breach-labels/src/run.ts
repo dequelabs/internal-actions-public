@@ -1,17 +1,25 @@
 import type * as core from '@actions/core'
 import type * as github from '@actions/github'
 
-type ImpactLevel = 'Blocker' | 'Critical' | 'Serious' | 'Moderate'
+type ListForRepoResponse = {
+  data: Array<{
+    number: number
+    created_at: string
+    labels: Array<string | { name?: string | null }>
+  }>
+}
+
+type ImpactLevel = 'VPAT:Blocker' | 'VPAT:Critical' | 'VPAT:Serious' | 'VPAT:Moderate'
 
 export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type GitHub = Pick<typeof github, 'getOctokit' | 'context'>
 
 // Define SLA Thresholds based on impact levels (in weeks)
 const LABEL_THRESHOLDS: Record<ImpactLevel, number> = {
-  Blocker: 4,
-  Critical: 10,
-  Serious: 20,
-  Moderate: 30
+  'VPAT:Blocker': 4,
+  'VPAT:Critical': 10,
+  'VPAT:Serious': 20,
+  'VPAT:Moderate': 30
 }
 
 // SLA Labels (only these should be removed/updated)
@@ -62,7 +70,7 @@ function getSLALabel(
  * 4. If no such issues are found, logs a message and exits.
  * 5. For each fetched issue:
  *    a. Calculates the age of the issue in weeks.
- *    b. Determines the issue's impact level (Blocker, Critical, Serious, or Moderate) by checking its existing labels.
+ *    b. Determines the issue's impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, or VPAT:Moderate) by checking its existing labels.
  *    c. If no recognized impact level label is found, logs a warning and skips the issue.
  *    d. Based on the issue's age and impact level, determines the appropriate SLA label
  *       (SLA P1, SLA P2, SLA P3, or SLA Breach) according to predefined thresholds.
@@ -87,7 +95,7 @@ export async function run(core: Core, github: GitHub): Promise<void> {
         state: 'open',
         labels: REQUIRED_LABELS.join(',')
       },
-      response =>
+      (response: ListForRepoResponse) =>
         response.data.map(issue => ({
           number: issue.number,
           createdAt: issue.created_at,
@@ -123,7 +131,7 @@ export async function run(core: Core, github: GitHub): Promise<void> {
 
       if (!impactLevel) {
         core.info(
-          `⚠️ Issue #${issue.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
+          `⚠️ Issue #${issue.number} has no recognized impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, VPAT:Moderate). Skipping.`
         )
         continue
       }

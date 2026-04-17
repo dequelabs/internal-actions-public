@@ -144,7 +144,7 @@ describe('run (SLA Breach Labels Action)', () => {
 
     assert.strictEqual(
       mockCoreInfo.calledWith(
-        `⚠️ Issue #${issueWithoutImpactRaw.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
+        `⚠️ Issue #${issueWithoutImpactRaw.number} has no recognized impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, VPAT:Moderate). Skipping.`
       ),
       true
     )
@@ -161,7 +161,7 @@ describe('run (SLA Breach Labels Action)', () => {
       labels: [
         { name: 'A11y' },
         { name: 'VPAT' },
-        { name: 'Blocker' },
+        { name: 'VPAT:Blocker' },
         { name: 'SLA P1' }
       ]
     }
@@ -193,7 +193,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const issueForP1Raw = {
       number: 11,
       created_at: threeWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Blocker' }]
     }
     setupMockOctokitPaginate([issueForP1Raw])
 
@@ -215,7 +215,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const issueForP2Raw = {
       number: 12,
       created_at: twoWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Blocker' }]
     }
     setupMockOctokitPaginate([issueForP2Raw])
 
@@ -237,7 +237,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const issueForP3Raw = {
       number: 13,
       created_at: oneWeekAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Blocker' }]
     }
     setupMockOctokitPaginate([issueForP3Raw])
 
@@ -259,7 +259,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const newIssueRaw = {
       number: 14,
       created_at: fewDaysAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Blocker' }]
     }
     setupMockOctokitPaginate([newIssueRaw])
 
@@ -278,7 +278,7 @@ describe('run (SLA Breach Labels Action)', () => {
       labels: [
         { name: 'A11y' },
         { name: 'VPAT' },
-        { name: 'Blocker' },
+        { name: 'VPAT:Blocker' },
         { name: 'SLA P1' }
       ]
     }
@@ -299,7 +299,7 @@ describe('run (SLA Breach Labels Action)', () => {
       labels: [
         { name: 'A11y' },
         { name: 'VPAT' },
-        { name: 'Blocker' },
+        { name: 'VPAT:Blocker' },
         { name: 'SLA P3' }
       ]
     }
@@ -321,7 +321,7 @@ describe('run (SLA Breach Labels Action)', () => {
       labels: [
         { name: 'A11y' },
         { name: 'VPAT' },
-        { name: 'Blocker' },
+        { name: 'VPAT:Blocker' },
         { name: 'SLA P1' }
       ]
     }
@@ -346,7 +346,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const issueForP1Raw = {
       number: 21,
       created_at: threeWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Blocker' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Blocker' }]
     }
     setupMockOctokitPaginate([issueForP1Raw])
 
@@ -368,7 +368,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const criticalIssueForP1Raw = {
       number: 30,
       created_at: nineWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Critical' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Critical' }]
     }
     setupMockOctokitPaginate([criticalIssueForP1Raw])
 
@@ -393,7 +393,7 @@ describe('run (SLA Breach Labels Action)', () => {
       labels: [
         { name: 'A11y' },
         { name: 'VPAT' },
-        { name: 'Blocker' },
+        { name: 'VPAT:Blocker' },
         { name: 'SLA P1' },
         { name: 'SLA P2' }
       ]
@@ -437,7 +437,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const seriousIssueForP1Raw = {
       number: 50,
       created_at: nineteenWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Serious' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Serious' }]
     }
     setupMockOctokitPaginate([seriousIssueForP1Raw])
 
@@ -459,7 +459,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const seriousIssueToBreachRaw = {
       number: 51,
       created_at: twentyWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Serious' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Serious' }]
     }
     setupMockOctokitPaginate([seriousIssueToBreachRaw])
 
@@ -481,7 +481,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const moderateIssueForP1Raw = {
       number: 60,
       created_at: twentyNineWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Moderate' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Moderate' }]
     }
     setupMockOctokitPaginate([moderateIssueForP1Raw])
 
@@ -503,7 +503,7 @@ describe('run (SLA Breach Labels Action)', () => {
     const moderateIssueToBreachRaw = {
       number: 61,
       created_at: thirtyWeeksAgoISO,
-      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'Moderate' }]
+      labels: [{ name: 'A11y' }, { name: 'VPAT' }, { name: 'VPAT:Moderate' }]
     }
     setupMockOctokitPaginate([moderateIssueToBreachRaw])
 
@@ -544,7 +544,7 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.strictEqual(mockCoreSetFailed.called, false)
     assert.strictEqual(
       mockCoreInfo.calledWith(
-        `⚠️ Issue #${issuesWithVariousLabelsRaw[0].number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`
+        `⚠️ Issue #${issuesWithVariousLabelsRaw[0].number} has no recognized impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, VPAT:Moderate). Skipping.`
       ),
       true
     )
