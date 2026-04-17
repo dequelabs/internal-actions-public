@@ -20,7 +20,10 @@ describe('checkLicenses', () => {
   beforeEach(() => {
     licenseChecker = {
       init: sinon.stub(),
-      asSummary: sinon.stub()
+      asSummary: sinon.stub(),
+      asCSV: sinon.stub(),
+      asMarkDown: sinon.stub(),
+      asPlainVertical: sinon.stub()
     }
 
     core = {
@@ -159,9 +162,7 @@ describe('checkLicenses', () => {
     const infoMessage = core.info.firstCall.args[0]
 
     assert.ok(
-      infoMessage.includes(
-        'Start checking licenses with the following options'
-      )
+      infoMessage.includes('Start checking licenses with the following options')
     )
     assert.ok(infoMessage.includes(options.startPath))
     assert.ok(infoMessage.includes('MIT'))
