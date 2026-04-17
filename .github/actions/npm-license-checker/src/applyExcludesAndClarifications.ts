@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs from 'node:fs'
 import semver from 'semver'
 import type { ModuleInfos } from './types.ts'
 

@@ -1,8 +1,11 @@
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 
-// Constructed at runtime to keep ncc's static analyzer from reaching for the
-// repo's own pnpm artifacts at build time.
+// Constructed at runtime to keep ncc's static analyzer from following these
+// literals into the repo's own pnpm artifacts at build time. ncc primarily
+// looks for `path.resolve/join(x, 'package.json')`-shaped patterns; string
+// concat defeats its constant-folding even for less-recognized names like
+// `pnpm-workspace.yaml`.
 const NODE_MODULES = ['node', 'modules'].join('_')
 const PNPM_DIR = '.' + 'pnpm'
 const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.')

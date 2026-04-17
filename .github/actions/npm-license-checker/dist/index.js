@@ -50438,10 +50438,12 @@ var source = __nccwpck_require__(483);
 var src = __nccwpck_require__(8528);
 // EXTERNAL MODULE: external "node:fs"
 var external_node_fs_ = __nccwpck_require__(3024);
+var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_);
 // EXTERNAL MODULE: ../../../node_modules/mkdirp/index.js
 var mkdirp = __nccwpck_require__(8915);
 // EXTERNAL MODULE: external "node:path"
 var external_node_path_ = __nccwpck_require__(6760);
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_);
 // EXTERNAL MODULE: ../../../node_modules/read-installed-packages/read-installed.js
 var read_installed = __nccwpck_require__(5290);
 // EXTERNAL MODULE: ../../../node_modules/spdx-correct/index.js
@@ -51928,12 +51930,6 @@ const writeOutput = (parsedArgs, foundLicensesJson) => {
 
 
 
-// EXTERNAL MODULE: external "fs"
-var external_fs_ = __nccwpck_require__(9896);
-var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(6928);
-var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
 ;// CONCATENATED MODULE: ./src/checkLicenses.ts
 async function checkLicenses(licenseChecker, options, core) {
     const { dependencyType, startPath, customFields, onlyAllow, detailsOutputPath, excludePackages, excludePackagesStartingWith, detailsOutputFormat, clarificationsPath } = options;
@@ -51973,33 +51969,33 @@ const PNPM_DIR = '.' + 'pnpm';
 const PNPM_WORKSPACE = ['pnpm-workspace', 'yaml'].join('.');
 const PNPM_LOCK = ['pnpm-lock', 'yaml'].join('.');
 function detectPnpm_detectPnpm(startPath) {
-    let dir = external_path_default().resolve(startPath);
-    const root = external_path_default().parse(dir).root;
+    let dir = external_node_path_default().resolve(startPath);
+    const root = external_node_path_default().parse(dir).root;
     while (dir !== root) {
-        if (external_fs_default().existsSync(dir + (external_path_default()).sep + NODE_MODULES + (external_path_default()).sep + PNPM_DIR)) {
+        if (external_node_fs_default().existsSync(dir + (external_node_path_default()).sep + NODE_MODULES + (external_node_path_default()).sep + PNPM_DIR)) {
             return true;
         }
-        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+        if (external_node_fs_default().existsSync(dir + (external_node_path_default()).sep + PNPM_WORKSPACE))
             return true;
-        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_LOCK))
+        if (external_node_fs_default().existsSync(dir + (external_node_path_default()).sep + PNPM_LOCK))
             return true;
-        dir = external_path_default().dirname(dir);
+        dir = external_node_path_default().dirname(dir);
     }
     return false;
 }
 function detectPnpm_findPnpmWorkspaceRoot(startPath) {
-    let dir = external_path_default().resolve(startPath);
-    const root = external_path_default().parse(dir).root;
+    let dir = external_node_path_default().resolve(startPath);
+    const root = external_node_path_default().parse(dir).root;
     while (dir !== root) {
-        if (external_fs_default().existsSync(dir + (external_path_default()).sep + PNPM_WORKSPACE))
+        if (external_node_fs_default().existsSync(dir + (external_node_path_default()).sep + PNPM_WORKSPACE))
             return dir;
-        dir = external_path_default().dirname(dir);
+        dir = external_node_path_default().dirname(dir);
     }
     return null;
 }
 
-// EXTERNAL MODULE: external "child_process"
-var external_child_process_ = __nccwpck_require__(5317);
+;// CONCATENATED MODULE: external "node:child_process"
+const external_node_child_process_namespaceObject = require("node:child_process");
 ;// CONCATENATED MODULE: ./src/scanPnpm.ts
 
 
@@ -52044,7 +52040,7 @@ function scanPnpm_scanPnpm(opts) {
     return parsePnpmOutput(stdout, readLicense, readPkg, opts.customFields);
 }
 function defaultExec(file, args, opts) {
-    return (0,external_child_process_.execFileSync)(file, args, opts);
+    return (0,external_node_child_process_namespaceObject.execFileSync)(file, args, opts);
 }
 function parsePnpmOutput(stdout, readLicense, readPkg, customFields) {
     const parsed = JSON.parse(stdout);
@@ -52133,11 +52129,11 @@ function extractCopyright(licenseText) {
 }
 function defaultReadLicenseInfo(pkgPath) {
     try {
-        const matched = licenseFiles(external_fs_default().readdirSync(pkgPath));
+        const matched = licenseFiles(external_node_fs_default().readdirSync(pkgPath));
         if (!matched.length)
             return undefined;
-        const filePath = external_path_default().join(pkgPath, matched[0]);
-        return { text: external_fs_default().readFileSync(filePath, 'utf8'), filePath };
+        const filePath = external_node_path_default().join(pkgPath, matched[0]);
+        return { text: external_node_fs_default().readFileSync(filePath, 'utf8'), filePath };
     }
     catch {
         return undefined;
@@ -52145,7 +52141,7 @@ function defaultReadLicenseInfo(pkgPath) {
 }
 function defaultReadPackageJson(pkgPath) {
     try {
-        return JSON.parse(external_fs_default().readFileSync(pkgPath + (external_path_default()).sep + PKG_JSON, 'utf8'));
+        return JSON.parse(external_node_fs_default().readFileSync(pkgPath + (external_node_path_default()).sep + PKG_JSON, 'utf8'));
     }
     catch {
         return undefined;
@@ -52168,7 +52164,7 @@ function applyExcludesAndClarifications(merged, options) {
         }
     }
     if (options.clarificationsPath) {
-        const raw = external_fs_default().readFileSync(options.clarificationsPath, 'utf8');
+        const raw = external_node_fs_default().readFileSync(options.clarificationsPath, 'utf8');
         const clarifications = JSON.parse(raw);
         for (const [spec, override] of Object.entries(clarifications)) {
             const at = spec.lastIndexOf('@');
@@ -52280,16 +52276,16 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             core.setFailed(`Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${DETAILS_OUTPUT_FORMATS.join(', ')}`);
             return;
         }
-        if (!external_fs_default().existsSync(external_path_default().resolve(startPath))) {
+        if (!external_node_fs_default().existsSync(external_node_path_default().resolve(startPath))) {
             core.setFailed(`The file specified by start-path does not exist: ${startPath}`);
             return;
         }
-        if (customFieldsPath && !external_fs_default().existsSync(external_path_default().resolve(customFieldsPath))) {
+        if (customFieldsPath && !external_node_fs_default().existsSync(external_node_path_default().resolve(customFieldsPath))) {
             core.setFailed(`The file specified by custom-fields-path does not exist: ${customFieldsPath}`);
             return;
         }
         if (clarificationsPath &&
-            !external_fs_default().existsSync(external_path_default().resolve(clarificationsPath))) {
+            !external_node_fs_default().existsSync(external_node_path_default().resolve(clarificationsPath))) {
             core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
             return;
         }
@@ -52302,7 +52298,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
         if (customFieldsPath) {
             core.info(`Provided custom fields path "${customFieldsPath}", reading custom fields...`);
             try {
-                const customFieldsContent = external_fs_default().readFileSync(external_path_default().resolve(customFieldsPath), 'utf8');
+                const customFieldsContent = external_node_fs_default().readFileSync(external_node_path_default().resolve(customFieldsPath), 'utf8');
                 customFields = JSON.parse(customFieldsContent);
                 core.info(`Custom fields: ${customFieldsContent}`);
             }
@@ -52311,7 +52307,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                 return;
             }
         }
-        const resolvedStart = external_path_default().resolve(startPath);
+        const resolvedStart = external_node_path_default().resolve(startPath);
         let absPath;
         try {
             absPath = normalizeScanPath(resolvedStart);
@@ -52328,7 +52324,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                 const isWorkspaceRoot = wsRoot !== null && wsRoot === absPath;
                 const cwd = isWorkspaceMember ? wsRoot : absPath;
                 const filter = isWorkspaceMember
-                    ? './' + external_path_default().relative(wsRoot, absPath)
+                    ? './' + external_node_path_default().relative(wsRoot, absPath)
                     : undefined;
                 result = scanPnpm({
                     cwd,
@@ -52364,7 +52360,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             }
             if (detailsOutputPath) {
                 const formatted = formatOutput(licenseChecker, result, detailsOutputFormat, customFields);
-                external_fs_default().writeFileSync(external_path_default().resolve(detailsOutputPath), formatted, 'utf8');
+                external_node_fs_default().writeFileSync(external_node_path_default().resolve(detailsOutputPath), formatted, 'utf8');
             }
             const summary = licenseChecker.asSummary(result);
             if (summary.length) {
@@ -52406,15 +52402,15 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
 function normalizeScanPath(resolved) {
     let stats;
     try {
-        stats = external_fs_default().statSync(resolved);
+        stats = external_node_fs_default().statSync(resolved);
     }
     catch {
         return resolved;
     }
     if (stats.isDirectory())
         return resolved;
-    if (external_path_default().basename(resolved) === 'package.json')
-        return external_path_default().dirname(resolved);
+    if (external_node_path_default().basename(resolved) === 'package.json')
+        return external_node_path_default().dirname(resolved);
     throw new Error(`start-path must be a directory or a package.json file, got: ${resolved}`);
 }
 

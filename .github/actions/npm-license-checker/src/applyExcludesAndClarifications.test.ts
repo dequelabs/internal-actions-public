@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import sinon from 'sinon'
-import fs from 'fs'
+import fs from 'node:fs'
 import applyExcludesAndClarifications from './applyExcludesAndClarifications.ts'
 import type { ModuleInfos } from './types.ts'
 

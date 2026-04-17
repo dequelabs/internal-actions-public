@@ -1,6 +1,6 @@
-import { execFileSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
 // @ts-expect-error No type declarations for this internal module
 import { licenseFiles } from 'license-checker-rseidelsohn/lib/license-files.js'
 import type { CustomFields, DependencyType, ModuleInfos } from './types.ts'
@@ -20,6 +20,9 @@ interface PnpmLicenseEntry {
 }
 
 type PnpmLicensesOutput = Record<string, PnpmLicenseEntry[]>
+
+/** A per-module entry being assembled on the pnpm path. */
+type PackageInfo = Record<string, unknown>
 
 export interface ScanPnpmOptions {
   cwd: string
@@ -94,10 +97,11 @@ function defaultExec(file: string, args: string[], opts: object): string {
   ) as string
 }
 
-// ---------------------------------------------------------------------------
-// Output parsing + enrichment
-// ---------------------------------------------------------------------------
-
+/**
+ * Parses `pnpm licenses list --json` output and builds up a `ModuleInfos`
+ * map, expanding each entry's version list into one per-version record and
+ * enriching it from the installed package's `package.json`.
+ */
 function parsePnpmOutput(
   stdout: string,
   readLicense: (
@@ -118,8 +122,7 @@ function parsePnpmOutput(
 
         const licenseInfo = pkgPath ? readLicense(pkgPath) : undefined
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const info: Record<string, any> = {
+        const info: PackageInfo = {
           name: entry.name,
           version,
           licenses: entry.license,
@@ -144,15 +147,15 @@ function parsePnpmOutput(
   return result
 }
 
-// ---------------------------------------------------------------------------
-// Field enrichment from package.json — mirrors the per-module population in
-// license-checker-rseidelsohn's `recursivelyCollectAllDependencies` (in
-// lib/index.js) so that pnpm output has the same shape as the library's.
-// ---------------------------------------------------------------------------
-
+/**
+ * Mirrors the per-module population in license-checker-rseidelsohn's
+ * `recursivelyCollectAllDependencies` (in lib/index.js) so that pnpm output
+ * has the same shape as the library's on the npm/yarn path. Reads repository,
+ * publisher/email/url, and any customFormat keys from the installed
+ * package's `package.json`.
+ */
 function enrichFromPackageJson(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  info: Record<string, any>,
+  info: PackageInfo,
   pkg: Record<string, unknown> | undefined,
   customFields?: CustomFields
 ): void {
@@ -206,13 +209,12 @@ function enrichFromPackageJson(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Copyright extraction — ports `getLinesWithCopyright` from
-// license-checker-rseidelsohn/lib/indexHelpers.js. Keeps the same paragraph-
-// split + "opyright"-prefix heuristic so the `copyright` field matches what
-// the library produces on the npm/yarn path.
-// ---------------------------------------------------------------------------
-
+/**
+ * Ports `getLinesWithCopyright` from
+ * license-checker-rseidelsohn/lib/indexHelpers.js. Keeps the same paragraph-
+ * split + "opyright"-prefix heuristic so the `copyright` field matches what
+ * the library produces on the npm/yarn path.
+ */
 function extractCopyright(licenseText: string): string | undefined {
   const paragraphs = licenseText
     .replace(/\r\n/g, '\n')
@@ -227,10 +229,12 @@ function extractCopyright(licenseText: string): string | undefined {
   return paragraphs[0].replace(/\n/g, '. ').trim()
 }
 
-// ---------------------------------------------------------------------------
-// Default I/O helpers (overridable via DI for tests)
-// ---------------------------------------------------------------------------
-
+/**
+ * Reads the first license-like file in a package directory. Uses the
+ * library's `licenseFiles()` helper so the filename-matching heuristic
+ * (LICENSE, LICENCE, LICENSE.md, COPYING, etc.) stays in parity with the
+ * npm/yarn path. Exported for tests.
+ */
 export function defaultReadLicenseInfo(
   pkgPath: string
 ): { text: string; filePath: string } | undefined {
