@@ -127,6 +127,81 @@ describe('run', () => {
     )
   })
 
+  it('should normalize a package.json start-path to its parent directory', async () => {
+    core.getInput.withArgs('start-path').returns('/tmp/foo/package.json')
+    existsSyncStub.withArgs(path.resolve('/tmp/foo/package.json')).returns(true)
+    sinon.stub(fs, 'statSync').returns({ isDirectory: () => false } as fs.Stats)
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      mockDetectPnpm.firstCall.args[0],
+      path.resolve('/tmp/foo')
+    )
+  })
+
+  it('should reject a non-package.json file as start-path', async () => {
+    core.getInput.withArgs('start-path').returns('/tmp/foo/README.md')
+    existsSyncStub.withArgs(path.resolve('/tmp/foo/README.md')).returns(true)
+    sinon.stub(fs, 'statSync').returns({ isDirectory: () => false } as fs.Stats)
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(core.setFailed.called, true)
+    assert.ok(
+      (core.setFailed.firstCall.args[0] as string).includes(
+        'start-path must be a directory or a package.json file'
+      )
+    )
+    assert.strictEqual(mockDetectPnpm.called, false)
+  })
+
+  it('should accept a directory start-path unchanged', async () => {
+    core.getInput.withArgs('start-path').returns('/tmp/foo')
+    existsSyncStub.withArgs(path.resolve('/tmp/foo')).returns(true)
+    sinon.stub(fs, 'statSync').returns({ isDirectory: () => true } as fs.Stats)
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      mockDetectPnpm.firstCall.args[0],
+      path.resolve('/tmp/foo')
+    )
+  })
+
+  it('should continue past start-path normalization when statSync fails', async () => {
+    sinon.stub(fs, 'statSync').throws(new Error('EACCES'))
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    // Falls through to the default library path (detectPnpm returns false)
+    assert.strictEqual(licenseChecker.init.called, true)
+  })
+
   it('should handle custom fields path correctly when file exists', async () => {
     core.getInput.withArgs('custom-fields-path').returns('./custom-fields.json')
     readFileSyncStub.returns(
@@ -206,6 +281,9 @@ describe('run', () => {
         'clarifications-path does not exist'
       )
     )
+    // Should short-circuit before any scan happens.
+    assert.strictEqual(licenseChecker.init.called, false)
+    assert.strictEqual(mockDetectPnpm.called, false)
   })
 
   it('should fail when checkLicenses rejects', async () => {
@@ -483,7 +561,7 @@ describe('run', () => {
     })
 
     it('should use -r for pnpm workspace root', async () => {
-      const root = path.resolve('./package.json')
+      const root = path.resolve('./')
       mockFindPnpmWorkspaceRoot.returns(root)
 
       await run({
@@ -561,6 +639,33 @@ describe('run', () => {
 
       const merged = licenseChecker.asSummary.firstCall.args[0] as ModuleInfos
       assert.strictEqual(merged['foo@1.0.0'].licenses, 'MIT')
+    })
+
+    it('should fail with targeted message when clarifications JSON is invalid', async () => {
+      mockScanPnpm.returns({
+        'foo@1.0.0': { licenses: 'MIT' }
+      })
+      core.getInput
+        .withArgs('clarifications-path')
+        .returns('./clarifications.json')
+      readFileSyncStub
+        .withArgs('./clarifications.json', 'utf8')
+        .returns('not valid json')
+
+      await run({
+        core,
+        licenseChecker,
+        detectPnpm: mockDetectPnpm,
+        findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+        scanPnpm: mockScanPnpm
+      })
+
+      assert.strictEqual(core.setFailed.called, true)
+      assert.ok(
+        (core.setFailed.firstCall.args[0] as string).includes(
+          'Error applying excludes/clarifications'
+        )
+      )
     })
 
     it('should apply excludes-starting-with to pnpm results', async () => {

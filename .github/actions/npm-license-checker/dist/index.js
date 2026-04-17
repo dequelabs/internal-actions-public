@@ -52291,6 +52291,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
         if (clarificationsPath &&
             !external_fs_default().existsSync(external_path_default().resolve(clarificationsPath))) {
             core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
+            return;
         }
         let customFields = {
             name: '',
@@ -52310,7 +52311,15 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                 return;
             }
         }
-        const absPath = external_path_default().resolve(startPath);
+        const resolvedStart = external_path_default().resolve(startPath);
+        let absPath;
+        try {
+            absPath = normalizeScanPath(resolvedStart);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            return;
+        }
         if (detectPnpm(absPath)) {
             let result;
             try {
@@ -52333,13 +52342,19 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                 core.setFailed(error.message);
                 return;
             }
-            applyExcludesAndClarifications(result, {
-                ...(excludePackages.trim().length && { excludePackages }),
-                ...(excludePackagesStartingWith.trim().length && {
-                    excludePackagesStartingWith
-                }),
-                ...(clarificationsPath.trim().length && { clarificationsPath })
-            });
+            try {
+                applyExcludesAndClarifications(result, {
+                    ...(excludePackages.trim().length && { excludePackages }),
+                    ...(excludePackagesStartingWith.trim().length && {
+                        excludePackagesStartingWith
+                    }),
+                    ...(clarificationsPath.trim().length && { clarificationsPath })
+                });
+            }
+            catch (error) {
+                core.setFailed(`Error applying excludes/clarifications: ${error.message}`);
+                return;
+            }
             try {
                 checkOnlyAllow(result, onlyAllow);
             }
@@ -52361,7 +52376,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             return;
         }
         const options = {
-            startPath,
+            startPath: absPath,
             dependencyType,
             customFields,
             onlyAllow,
@@ -52387,6 +52402,20 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
     catch (error) {
         core.setFailed(`Error checking licenses: ${error.message}`);
     }
+}
+function normalizeScanPath(resolved) {
+    let stats;
+    try {
+        stats = external_fs_default().statSync(resolved);
+    }
+    catch {
+        return resolved;
+    }
+    if (stats.isDirectory())
+        return resolved;
+    if (external_path_default().basename(resolved) === 'package.json')
+        return external_path_default().dirname(resolved);
+    throw new Error(`start-path must be a directory or a package.json file, got: ${resolved}`);
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
