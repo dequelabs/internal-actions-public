@@ -31837,10 +31837,10 @@ var core = __nccwpck_require__(7930);
 var github = __nccwpck_require__(6834);
 ;// CONCATENATED MODULE: ./src/run.ts
 const LABEL_THRESHOLDS = {
-    Blocker: 4,
-    Critical: 10,
-    Serious: 20,
-    Moderate: 30
+    'VPAT:Blocker': 4,
+    'VPAT:Critical': 10,
+    'VPAT:Serious': 20,
+    'VPAT:Moderate': 30
 };
 const SLA_LABELS = ['SLA P1', 'SLA P2', 'SLA P3', 'SLA Breach'];
 const REQUIRED_LABELS = ['A11y', 'VPAT'];
@@ -31874,7 +31874,7 @@ async function run(core, github) {
             repo,
             state: 'open',
             labels: REQUIRED_LABELS.join(',')
-        }, response => response.data.map(issue => ({
+        }, (response) => response.data.map(issue => ({
             number: issue.number,
             createdAt: issue.created_at,
             labels: issue.labels.map(label => ({
@@ -31893,7 +31893,7 @@ async function run(core, github) {
             const weeksOld = Math.floor(daysOld / 7);
             const impactLevel = Object.keys(LABEL_THRESHOLDS).find(levelKey => issue.labels.some(label => label.name.toLowerCase() === levelKey.toLowerCase()));
             if (!impactLevel) {
-                core.info(`⚠️ Issue #${issue.number} has no recognized impact level (Blocker, Critical, Serious, Moderate). Skipping.`);
+                core.info(`⚠️ Issue #${issue.number} has no recognized impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, VPAT:Moderate). Skipping.`);
                 continue;
             }
             const newSLALabel = getSLALabel(weeksOld, impactLevel);
