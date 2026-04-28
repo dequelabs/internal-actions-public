@@ -58,7 +58,7 @@ const setupMockOctokitPaginate = (rawIssues: RawTestIssue[]) => {
   )
 }
 
-describe('run (SLA Breach Labels Action)', () => {
+describe('run (VPAT:SLA Breach Labels Action)', () => {
   let clock: sinon.SinonFakeTimers
   let mockCore: Core
   let mockGitHub: GitHub
@@ -153,7 +153,7 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.strictEqual(mockOctokitAddLabels.called, false)
   })
 
-  it('should apply "SLA Breach" if issue is older than Blocker threshold and remove old P-label', async () => {
+  it('should apply "VPAT:SLA Breach" if issue is older than Blocker threshold and remove old P-label', async () => {
     const fiveWeeksAgoISO = getPastDateISO({ weeks: 5 })
     const issueToBreachRaw = {
       number: 10,
@@ -162,7 +162,7 @@ describe('run (SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'SLA P1' }
+        { name: 'VPAT:SLA P1' }
       ]
     }
     setupMockOctokitPaginate([issueToBreachRaw])
@@ -174,7 +174,7 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueToBreachRaw.number,
-      name: 'SLA P1'
+      name: 'VPAT:SLA P1'
     })
 
     assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
@@ -182,13 +182,13 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueToBreachRaw.number,
-      labels: ['SLA Breach']
+      labels: ['VPAT:SLA Breach']
     })
 
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should apply "SLA P1" if issue is 1 week from Blocker threshold (3 weeks old)', async () => {
+  it('should apply "VPAT:SLA P1" if issue is 1 week from Blocker threshold (3 weeks old)', async () => {
     const threeWeeksAgoISO = getPastDateISO({ weeks: 3 })
     const issueForP1Raw = {
       number: 11,
@@ -205,12 +205,12 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueForP1Raw.number,
-      labels: ['SLA P1']
+      labels: ['VPAT:SLA P1']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should apply "SLA P2" if issue is 2 weeks from Blocker threshold (2 weeks old)', async () => {
+  it('should apply "VPAT:SLA P2" if issue is 2 weeks from Blocker threshold (2 weeks old)', async () => {
     const twoWeeksAgoISO = getPastDateISO({ weeks: 2 })
     const issueForP2Raw = {
       number: 12,
@@ -227,12 +227,12 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueForP2Raw.number,
-      labels: ['SLA P2']
+      labels: ['VPAT:SLA P2']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should apply "SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
+  it('should apply "VPAT: SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
     const oneWeekAgoISO = getPastDateISO({ weeks: 1 })
     const issueForP3Raw = {
       number: 13,
@@ -249,7 +249,7 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueForP3Raw.number,
-      labels: ['SLA P3']
+      labels: ['VPAT: SLA P3']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
@@ -270,7 +270,7 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should not change labels if issue already has the correct SLA label (SLA P1)', async () => {
+  it('should not change labels if issue already has the correct SLA label (VPAT:SLA P1)', async () => {
     const threeWeeksAgoISO = getPastDateISO({ weeks: 3 })
     const issueWithCorrectLabelRaw = {
       number: 15,
@@ -279,7 +279,7 @@ describe('run (SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'SLA P1' }
+        { name: 'VPAT:SLA P1' }
       ]
     }
     setupMockOctokitPaginate([issueWithCorrectLabelRaw])
@@ -300,7 +300,7 @@ describe('run (SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'SLA P3' }
+        { name: 'VPAT: SLA P3' }
       ]
     }
     setupMockOctokitPaginate([issueWithObsoleteLabelRaw])
@@ -308,7 +308,7 @@ describe('run (SLA Breach Labels Action)', () => {
     await run(mockCore, mockGitHub)
 
     assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
-    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'SLA P3')
+    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'VPAT: SLA P3')
     assert.strictEqual(mockOctokitAddLabels.called, false)
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
@@ -322,7 +322,7 @@ describe('run (SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'SLA P1' }
+        { name: 'VPAT:SLA P1' }
       ]
     }
     setupMockOctokitPaginate([issueToBreachRaw])
@@ -336,7 +336,7 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.strictEqual(mockCoreSetFailed.calledOnce, true)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
-      `Could not remove label SLA P1 from issue #${issueToBreachRaw.number}: ${removeError.message}`
+      `Could not remove label VPAT:SLA P1 from issue #${issueToBreachRaw.number}: ${removeError.message}`
     )
     assert.strictEqual(mockOctokitAddLabels.called, false)
   })
@@ -359,11 +359,11 @@ describe('run (SLA Breach Labels Action)', () => {
     assert.strictEqual(mockCoreSetFailed.calledOnce, true)
     assert.strictEqual(
       mockCoreSetFailed.firstCall.args[0],
-      `Could not add label SLA P1 to issue #${issueForP1Raw.number}: ${addError.message}`
+      `Could not add label VPAT:SLA P1 to issue #${issueForP1Raw.number}: ${addError.message}`
     )
   })
 
-  it('should correctly apply "SLA P1" for a "Critical" issue (10w SLA) at 9 weeks old', async () => {
+  it('should correctly apply "VPAT:SLA P1" for a "Critical" issue (10w SLA) at 9 weeks old', async () => {
     const nineWeeksAgoISO = getPastDateISO({ weeks: 9 })
     const criticalIssueForP1Raw = {
       number: 30,
@@ -380,7 +380,7 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: criticalIssueForP1Raw.number,
-      labels: ['SLA P1']
+      labels: ['VPAT:SLA P1']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
@@ -394,8 +394,8 @@ describe('run (SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'SLA P1' },
-        { name: 'SLA P2' }
+        { name: 'VPAT:SLA P1' },
+        { name: 'VPAT:SLA P2' }
       ]
     }
     setupMockOctokitPaginate([issueWithMultipleOldSLAsRaw])
@@ -407,12 +407,12 @@ describe('run (SLA Breach Labels Action)', () => {
       mockOctokitRemoveLabel.firstCall.args[0].name,
       mockOctokitRemoveLabel.secondCall.args[0].name
     ]
-    assert.ok(removedNames.includes('SLA P1'))
-    assert.ok(removedNames.includes('SLA P2'))
+    assert.ok(removedNames.includes('VPAT:SLA P1'))
+    assert.ok(removedNames.includes('VPAT:SLA P2'))
 
     assert.strictEqual(mockOctokitAddLabels.calledOnce, true)
     assert.deepStrictEqual(mockOctokitAddLabels.firstCall.args[0].labels, [
-      'SLA Breach'
+      'VPAT:SLA Breach'
     ])
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
@@ -432,7 +432,7 @@ describe('run (SLA Breach Labels Action)', () => {
     )
   })
 
-  it('should correctly apply "SLA P1" for a "Serious" issue (20w SLA) at 19 weeks old', async () => {
+  it('should correctly apply "VPAT:SLA P1" for a "Serious" issue (20w SLA) at 19 weeks old', async () => {
     const nineteenWeeksAgoISO = getPastDateISO({ weeks: 19 })
     const seriousIssueForP1Raw = {
       number: 50,
@@ -449,12 +449,12 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: seriousIssueForP1Raw.number,
-      labels: ['SLA P1']
+      labels: ['VPAT:SLA P1']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should correctly apply "SLA Breach" for a "Serious" issue (20w SLA) at 20 weeks old', async () => {
+  it('should correctly apply "VPAT:SLA Breach" for a "Serious" issue (20w SLA) at 20 weeks old', async () => {
     const twentyWeeksAgoISO = getPastDateISO({ weeks: 20 })
     const seriousIssueToBreachRaw = {
       number: 51,
@@ -471,12 +471,12 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: seriousIssueToBreachRaw.number,
-      labels: ['SLA Breach']
+      labels: ['VPAT:SLA Breach']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should correctly apply "SLA P1" for a "Moderate" issue (30w SLA) at 29 weeks old', async () => {
+  it('should correctly apply "VPAT:SLA P1" for a "Moderate" issue (30w SLA) at 29 weeks old', async () => {
     const twentyNineWeeksAgoISO = getPastDateISO({ weeks: 29 })
     const moderateIssueForP1Raw = {
       number: 60,
@@ -493,12 +493,12 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: moderateIssueForP1Raw.number,
-      labels: ['SLA P1']
+      labels: ['VPAT:SLA P1']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should correctly apply "SLA Breach" for a "Moderate" issue (30w SLA) at 30 weeks old', async () => {
+  it('should correctly apply "VPAT:SLA Breach" for a "Moderate" issue (30w SLA) at 30 weeks old', async () => {
     const thirtyWeeksAgoISO = getPastDateISO({ weeks: 30 })
     const moderateIssueToBreachRaw = {
       number: 61,
@@ -515,7 +515,7 @@ describe('run (SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: moderateIssueToBreachRaw.number,
-      labels: ['SLA Breach']
+      labels: ['VPAT:SLA Breach']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })

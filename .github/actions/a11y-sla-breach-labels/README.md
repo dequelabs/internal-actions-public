@@ -1,6 +1,6 @@
 # 🏷️ A11y SLA Label Automation
 
-This GitHub Action automatically adds SLA labels like **SLA P1**, **SLA P2**, **SLA Breach**, etc., based on how old an issue is and its **impact level**.
+This GitHub Action automatically adds SLA labels like **VPAT:SLA P1**, **VPAT:SLA P2**, **VPAT:SLA Breach**, etc., based on how old an issue is and its **impact level**.
 
 ---
 
@@ -10,10 +10,10 @@ This GitHub Action automatically adds SLA labels like **SLA P1**, **SLA P2**, **
 - Checks for impact level labels: `Blocker`, `Critical`, `Serious`, `Moderate`
 - Calculates the age of the issue (in weeks)
 - Adds or updates one of the following SLA labels:
-  - **SLA P3** – 3 weeks before the breach deadline
-  - **SLA P2** – 2 weeks before the breach deadline
-  - **SLA P1** – 1 week before the breach deadline
-  - **SLA Breach** – if the issue has passed the deadline
+  - **VPAT: SLA P3** – 3 weeks before the breach deadline
+  - **VPAT:SLA P2** – 2 weeks before the breach deadline
+  - **VPAT:SLA P1** – 1 week before the breach deadline
+  - **VPAT:SLA Breach** – if the issue has passed the deadline
 - Removes any previously applied SLA labels if necessary
 
 ---
