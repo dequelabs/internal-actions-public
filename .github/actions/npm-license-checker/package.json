@@ -18,9 +18,11 @@
   },
   "devDependencies": {
     "@actions/core": "^1.11.1",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "@types/semver": "^7.5.8"
   },
   "dependencies": {
-    "license-checker-rseidelsohn": "^4.4.2"
+    "license-checker-rseidelsohn": "^4.4.2",
+    "semver": "^7.6.0"
   }
 }
