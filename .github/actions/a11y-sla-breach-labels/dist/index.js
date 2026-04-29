@@ -31845,7 +31845,7 @@ const LABEL_THRESHOLDS = {
 const SLA_LABELS = [
     'VPAT:SLA P1',
     'VPAT:SLA P2',
-    'VPAT: SLA P3',
+    'VPAT:SLA P3',
     'VPAT:SLA Breach'
 ];
 const REQUIRED_LABELS = ['A11y', 'VPAT'];
@@ -31864,7 +31864,7 @@ function getSLALabel(weeksOld, impactLevel) {
         return 'VPAT:SLA P2';
     }
     else if (weeksOld >= impactSLAWeeks - 3) {
-        return 'VPAT: SLA P3';
+        return 'VPAT:SLA P3';
     }
     return;
 }

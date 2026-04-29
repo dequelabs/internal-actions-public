@@ -26,12 +26,12 @@ const LABEL_THRESHOLDS: Record<ImpactLevel, number> = {
 type SLALabel =
   | 'VPAT:SLA P1'
   | 'VPAT:SLA P2'
-  | 'VPAT: SLA P3'
+  | 'VPAT:SLA P3'
   | 'VPAT:SLA Breach'
 const SLA_LABELS: SLALabel[] = [
   'VPAT:SLA P1',
   'VPAT:SLA P2',
-  'VPAT: SLA P3',
+  'VPAT:SLA P3',
   'VPAT:SLA Breach'
 ]
 
@@ -64,7 +64,7 @@ function getSLALabel(
   } else if (weeksOld >= impactSLAWeeks - 2) {
     return 'VPAT:SLA P2'
   } else if (weeksOld >= impactSLAWeeks - 3) {
-    return 'VPAT: SLA P3'
+    return 'VPAT:SLA P3'
   }
   return
 }
@@ -82,7 +82,7 @@ function getSLALabel(
  *    b. Determines the issue's impact level (VPAT:Blocker, VPAT:Critical, VPAT:Serious, or VPAT:Moderate) by checking its existing labels.
  *    c. If no recognized impact level label is found, logs a warning and skips the issue.
  *    d. Based on the issue's age and impact level, determines the appropriate SLA label
- *       (VPAT:SLA P1, VPAT:SLA P2, VPAT: SLA P3, or VPAT:SLA Breach) according to predefi ned thresholds.
+ *       (VPAT:SLA P1, VPAT:SLA P2, VPAT:SLA P3, or VPAT:SLA Breach) according to predefined thresholds.
  *    e. Identifies any existing SLA labels on the issue that are different from the newly determined SLA label.
  *    f. Removes these incorrect or outdated SLA labels from the issue.
  *    g. If a new SLA label is determined and is not already present on the issue, adds the new SLA label.

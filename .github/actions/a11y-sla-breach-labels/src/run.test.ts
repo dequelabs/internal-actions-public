@@ -232,7 +232,7 @@ describe('run (VPAT:SLA Breach Labels Action)', () => {
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
 
-  it('should apply "VPAT: SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
+  it('should apply "VPAT:SLA P3" if issue is 3 weeks from Blocker threshold (1 week old)', async () => {
     const oneWeekAgoISO = getPastDateISO({ weeks: 1 })
     const issueForP3Raw = {
       number: 13,
@@ -249,7 +249,7 @@ describe('run (VPAT:SLA Breach Labels Action)', () => {
       owner: MOCK_OWNER,
       repo: MOCK_REPO,
       issue_number: issueForP3Raw.number,
-      labels: ['VPAT: SLA P3']
+      labels: ['VPAT:SLA P3']
     })
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
@@ -300,7 +300,7 @@ describe('run (VPAT:SLA Breach Labels Action)', () => {
         { name: 'A11y' },
         { name: 'VPAT' },
         { name: 'VPAT:Blocker' },
-        { name: 'VPAT: SLA P3' }
+        { name: 'VPAT:SLA P3' }
       ]
     }
     setupMockOctokitPaginate([issueWithObsoleteLabelRaw])
@@ -308,7 +308,7 @@ describe('run (VPAT:SLA Breach Labels Action)', () => {
     await run(mockCore, mockGitHub)
 
     assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
-    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'VPAT: SLA P3')
+    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'VPAT:SLA P3')
     assert.strictEqual(mockOctokitAddLabels.called, false)
     assert.strictEqual(mockCoreSetFailed.called, false)
   })
