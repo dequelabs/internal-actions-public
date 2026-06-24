@@ -8,6 +8,8 @@ onlyBuiltDependencies: []
 
 # Supply-chain protection: refuse to install packages newer than ~6d23h,
 # staying just under Dependabot's default 7-day cooldown. Integer in MINUTES.
+# To pull an urgent out-of-band release before the window elapses, add the
+# package to minimumReleaseAgeExclude below (or lower this value temporarily).
 minimumReleaseAge: 10020
 minimumReleaseAgeExclude:
   - '@deque/*'
