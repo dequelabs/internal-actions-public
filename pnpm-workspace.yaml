@@ -1,0 +1,15 @@
+packages:
+  - '.github/actions/*'
+
+# Packages allowed to run lifecycle scripts during install. pnpm 10 blocks all
+# lifecycle scripts by default as supply-chain hardening. Keep this empty until
+# a real build need surfaces; add packages one at a time only when flagged.
+onlyBuiltDependencies: []
+
+# Supply-chain protection: refuse to install packages newer than ~6d23h,
+# staying just under Dependabot's default 7-day cooldown. Integer in MINUTES.
+minimumReleaseAge: 10020
+minimumReleaseAgeExclude:
+  - '@deque/*'
+  - '@axe-devtools/*'
+  - '@axe-core/*'

@@ -4,17 +4,15 @@
   "description": "A collection of GitHub actions for internal use with public and private repositories",
   "scripts": {
     "prepare": "husky",
-    "typecheck": "npm --workspaces run typecheck",
-    "build": "npm --workspaces run build",
-    "test": "npm --workspaces run test"
+    "typecheck": "pnpm -r run typecheck",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test"
   },
   "license": "MPL-2.0",
+  "packageManager": "pnpm@10.34.4",
   "engines": {
     "node": ">=24"
   },
-  "workspaces": [
-    "./.github/actions/*"
-  ],
   "devDependencies": {
     "@eslint/js": "^9.15.0",
     "@types/node": "^24.0.0",

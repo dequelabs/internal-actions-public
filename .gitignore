@@ -4,3 +4,5 @@ coverage
 .claude/settings.local.json
 **/.DS_Store
 .pnpm-store
+package-lock.json
+yarn.lock

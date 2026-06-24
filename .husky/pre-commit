@@ -1,5 +1,14 @@
+if [ -f package-lock.json ] || [ -f yarn.lock ]; then
+  echo "ERROR: package-lock.json or yarn.lock detected in repo root."
+  echo "This repo uses pnpm. Recover with:"
+  echo "  rm -f package-lock.json yarn.lock"
+  echo "  find . -name node_modules -type d -prune -exec rm -rf {} +"
+  echo "  pnpm install"
+  exit 1
+fi
+
 # this file requires bash to run in github actions (github
 # actions use dash as default `sh` command)
 # @see https://github.com/typicode/husky/issues/1326
 bash "$(dirname -- "$0")/build-changed-files.sh"
-npx lint-staged
+pnpm exec lint-staged

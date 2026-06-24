@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# only run the npm build script for each workspace directory that has changed files
+# only run the build script for each workspace directory that has changed files
 function run_build {
   # convert multiline string into array
   # @see https://stackoverflow.com/questions/24628076/convert-multiline-string-to-array
@@ -14,7 +14,7 @@ function run_build {
   unique_dirs=($(for (( i=0; i<${#lines[@]}; i++ )) ; do echo "${lines[$i]%%/*}"; done | sort -u))
 
   for dir in "${unique_dirs[@]}"; do
-     npm run build -w "$dir"
+     pnpm --filter "./$dir" run build
   done
 }
 

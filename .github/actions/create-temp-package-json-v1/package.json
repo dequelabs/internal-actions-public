@@ -24,5 +24,8 @@
     "fmt": "prettier --write \"src/**/*.{js,ts,tsx,json,md,css,html}\"",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\""
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@actions/core": "^1.11.1",
+    "@types/node": "^24.0.0"
+  }
 }
