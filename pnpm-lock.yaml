@@ -57,6 +57,15 @@ importers:
         specifier: ^24.0.0
         version: 24.12.2
 
+  .github/actions/bundle-size-budget:
+    devDependencies:
+      '@actions/core':
+        specifier: ^1.11.1
+        version: 1.11.1
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.2
+
   .github/actions/create-temp-package-json-v1:
     devDependencies:
       '@actions/core':

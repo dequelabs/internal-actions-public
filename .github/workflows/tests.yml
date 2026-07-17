@@ -104,6 +104,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter a11y-sla-breach-labels run coverage
 
+  bundle-size-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter bundle-size-budget run coverage
+
   create-temp-package-json-v1:
     runs-on: ubuntu-latest
     timeout-minutes: 5
