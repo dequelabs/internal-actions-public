@@ -39,6 +39,7 @@ describe('run', () => {
       getInput: sinon.stub().callsFake((name: string) => inputs[name] ?? ''),
       info: sinon.stub(),
       warning: sinon.stub(),
+      error: sinon.stub(),
       setFailed: sinon.stub(),
       summary
     } as unknown as sinon.SinonStubbedInstance<Core> & { summary: SummaryStub }
@@ -224,14 +225,58 @@ describe('run', () => {
     inputs['max-bytes'] = '100'
     await run(core)
     assert.equal(core.setFailed.calledOnce, true)
-    assert.equal(core.warning.called, true)
+    assert.match(core.warning.firstCall.args[0] as string, /⚠️ warn/)
+    assert.match(core.error.firstCall.args[0] as string, /❌ fail/)
+  })
+
+  it('reports regressions as errors so they show up as annotations', async () => {
+    inputs['current-path'] = writeJson('current.json', {
+      a: 1000 + 200 * 1024
+    })
+    inputs['baseline-path'] = writeJson('baseline.json', { a: 1000 })
+    await run(core)
+    assert.equal(core.setFailed.calledOnce, true)
+    assert.match(core.error.firstCall.args[0] as string, /❌ a/)
+  })
+
+  it('runs headroom only, without warning, when baseline-path is omitted', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 10 })
+    inputs['baseline-path'] = ''
+    inputs['max-bytes'] = '100'
+    await run(core)
+    assert.equal(core.setFailed.called, false)
+    assert.equal(core.warning.called, false)
     assert.match(
       core.info
         .getCalls()
         .map(c => c.args[0])
         .join('\n') as string,
-      /❌ fail/
+      /Regression: skipped \(no baseline-path was provided\)/
     )
+  })
+
+  it('fails when fail-on-missing-baseline is true but baseline-path is omitted', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 10 })
+    inputs['baseline-path'] = ''
+    inputs['fail-on-missing-baseline'] = 'true'
+    await run(core)
+    assert.equal(core.setFailed.calledOnce, true)
+    assert.match(
+      core.setFailed.firstCall.args[0] as string,
+      /no baseline-path was provided/
+    )
+  })
+
+  it('warns about limits and baseline keys that are absent from current', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 10 })
+    inputs['baseline-path'] = writeJson('baseline.json', { a: 10, gone: 20 })
+    inputs['limits-path'] = writeJson('limits.json', { a: 100, renamed: 100 })
+    await run(core)
+    assert.equal(core.setFailed.called, false)
+    const warning = core.warning.firstCall.args[0] as string
+    assert.match(warning, /unenforced/)
+    assert.match(warning, /renamed/)
+    assert.match(warning, /gone/)
   })
 
   it('fails when writing the step summary throws', async () => {

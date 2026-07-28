@@ -119,6 +119,48 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter bundle-size-budget run coverage
 
+  bundle-size-budget-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter bundle-size-budget run build
+      - name: Write size-map fixtures
+        run: |
+          echo '{"a.js": 1000}' > "$RUNNER_TEMP/current.json"
+          echo '{"a.js": 900}' > "$RUNNER_TEMP/baseline.json"
+      # The unit tests stub getInput, so only running the real action verifies
+      # that action.yml's input names match run.ts and that the node24
+      # entrypoint boots from the committed dist.
+      - name: Within budget
+        uses: ./.github/actions/bundle-size-budget
+        with:
+          current-path: ${{ runner.temp }}/current.json
+          baseline-path: ${{ runner.temp }}/baseline.json
+          max-bytes: 2000
+      - name: Over budget
+        id: over-budget
+        continue-on-error: true
+        uses: ./.github/actions/bundle-size-budget
+        with:
+          current-path: ${{ runner.temp }}/current.json
+          baseline-path: ${{ runner.temp }}/baseline.json
+          max-bytes: 500
+      - name: Verify the breach failed the step
+        run: |
+          if [ "${{ steps.over-budget.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail when max-bytes is breached"
+            exit 1
+          fi
+
   create-temp-package-json-v1:
     runs-on: ubuntu-latest
     timeout-minutes: 5

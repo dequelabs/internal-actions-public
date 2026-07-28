@@ -39,6 +39,21 @@ export function checkHeadroom(
   return findings
 }
 
+/**
+ * Keys that `tracked` (a limits or baseline map) knows about but that are
+ * absent from `current`. Both checks iterate `current`, so these keys are
+ * silently unenforced — usually a rename or a dropped asset.
+ */
+export function findMissingKeys(
+  current: SizeMap,
+  tracked: SizeMap | null
+): string[] {
+  if (tracked == null) return []
+  return Object.keys(tracked).filter(
+    key => !Object.prototype.hasOwnProperty.call(current, key)
+  )
+}
+
 export function checkRegression(
   current: SizeMap,
   baseline: SizeMap,

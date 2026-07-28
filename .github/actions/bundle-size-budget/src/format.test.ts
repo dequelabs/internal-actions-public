@@ -44,19 +44,24 @@ describe('buildStepSummary', () => {
     const skipped = buildStepSummary({
       headroom: [],
       regressions: [],
-      skippedRegression: true,
+      regressionSkipReason: 'baseline-path not found at baseline.json',
       skippedHeadroom: true,
+      missingKeys: [],
       failed: false
     })
     assert.match(skipped, /Headroom check skipped/)
-    assert.match(skipped, /Regression check skipped/)
+    assert.match(
+      skipped,
+      /Regression check skipped \(baseline-path not found at baseline\.json\)/
+    )
     assert.match(skipped, /\*\*Result:\*\* OK/)
 
     const ok = buildStepSummary({
       headroom: [],
       regressions: [],
-      skippedRegression: false,
+      regressionSkipReason: null,
       skippedHeadroom: false,
+      missingKeys: [],
       failed: false
     })
     assert.match(ok, /within the warn band/)
@@ -65,12 +70,26 @@ describe('buildStepSummary', () => {
     const failed = buildStepSummary({
       headroom: [{ key: 'a', size: 100, limit: 100, fail: true }],
       regressions: [{ key: 'a', before: 50, size: 100, delta: 50 }],
-      skippedRegression: false,
+      regressionSkipReason: null,
       skippedHeadroom: false,
+      missingKeys: [],
       failed: true
     })
     assert.match(failed, /meets or exceeds the limit/)
     assert.match(failed, /\+50 B/)
     assert.match(failed, /\*\*Result:\*\* failed/)
+  })
+
+  it('lists tracked keys that are absent from the current map', () => {
+    const summary = buildStepSummary({
+      headroom: [],
+      regressions: [],
+      regressionSkipReason: null,
+      skippedHeadroom: false,
+      missingKeys: ['old.js'],
+      failed: false
+    })
+    assert.match(summary, /### Unenforced keys/)
+    assert.match(summary, /- `old\.js`/)
   })
 })

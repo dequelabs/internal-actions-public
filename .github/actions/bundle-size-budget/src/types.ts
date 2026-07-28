@@ -4,7 +4,7 @@ export type SizeMap = Record<string, number>
 
 export type Core = Pick<
   typeof core,
-  'getInput' | 'info' | 'warning' | 'setFailed' | 'summary'
+  'getInput' | 'info' | 'warning' | 'error' | 'setFailed' | 'summary'
 >
 
 export type HeadroomFinding = {
@@ -19,12 +19,4 @@ export type RegressionFinding = {
   before: number
   size: number
   delta: number
-}
-
-export type CheckResult = {
-  headroom: HeadroomFinding[]
-  regressions: RegressionFinding[]
-  failed: boolean
-  skippedRegression: boolean
-  skippedHeadroom: boolean
 }

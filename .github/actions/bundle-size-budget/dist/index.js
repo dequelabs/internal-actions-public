@@ -27624,6 +27624,11 @@ function checkHeadroom(current, warnRatio, maxBytes, limits) {
     }
     return findings;
 }
+function findMissingKeys(current, tracked) {
+    if (tracked == null)
+        return [];
+    return Object.keys(tracked).filter(key => !Object.prototype.hasOwnProperty.call(current, key));
+}
 function checkRegression(current, baseline, maxIncreaseRatio, minIncreaseBytes) {
     const findings = [];
     for (const [key, size] of Object.entries(current)) {
@@ -27738,8 +27743,8 @@ function buildStepSummary(options) {
         }
         lines.push('');
     }
-    if (options.skippedRegression) {
-        lines.push('_Regression check skipped (baseline missing or unreadable)._', '');
+    if (options.regressionSkipReason) {
+        lines.push(`_Regression check skipped (${options.regressionSkipReason})._`, '');
     }
     else if (options.regressions.length === 0) {
         lines.push('### Significant increases vs baseline', '', 'None.', '');
@@ -27748,6 +27753,13 @@ function buildStepSummary(options) {
         lines.push('### Significant increases vs baseline', '');
         for (const line of formatRegressionLines(options.regressions)) {
             lines.push(`- ${line}`);
+        }
+        lines.push('');
+    }
+    if (options.missingKeys.length) {
+        lines.push('### Unenforced keys', '', 'Tracked in `limits-path`/baseline but absent from `current-path`, so no budget applied:', '');
+        for (const key of options.missingKeys) {
+            lines.push(`- \`${key}\``);
         }
         lines.push('');
     }
@@ -27777,7 +27789,7 @@ function readOptionalMap(filePath, label) {
 async function run(core) {
     try {
         const currentPath = core.getInput('current-path', { required: true });
-        const baselinePath = core.getInput('baseline-path', { required: true });
+        const baselinePath = core.getInput('baseline-path') || '';
         const maxIncreaseRatio = parseRatio(core.getInput('max-increase-ratio') || '0.1', 'max-increase-ratio');
         const minIncreaseBytes = parseBytes(core.getInput('min-increase-bytes') || '150kb');
         const failOnMissingBaseline = parseBoolean(core.getInput('fail-on-missing-baseline') || 'false');
@@ -27809,26 +27821,46 @@ async function run(core) {
         }
         const skippedHeadroom = maxBytes == null && limits == null;
         const headroom = checkHeadroom(current, warnRatio, maxBytes, limits);
-        let skippedRegression = false;
+        let regressionSkipReason = null;
         let regressions = [];
-        const baselineResult = readOptionalMap(baselinePath, 'baseline-path');
-        if (baselineResult.map == null) {
-            skippedRegression = true;
+        let baseline = null;
+        if (!baselinePath.trim()) {
             if (failOnMissingBaseline) {
-                core.setFailed(baselineResult.error);
+                core.setFailed('fail-on-missing-baseline is true but no baseline-path was provided.');
                 return;
             }
-            core.warning(baselineResult.error);
+            regressionSkipReason = 'no baseline-path was provided';
         }
         else {
-            regressions = checkRegression(current, baselineResult.map, maxIncreaseRatio, minIncreaseBytes);
+            const baselineResult = readOptionalMap(baselinePath, 'baseline-path');
+            if (baselineResult.map == null) {
+                regressionSkipReason = baselineResult.error;
+                if (failOnMissingBaseline) {
+                    core.setFailed(baselineResult.error);
+                    return;
+                }
+                core.warning(baselineResult.error);
+            }
+            else {
+                baseline = baselineResult.map;
+                regressions = checkRegression(current, baseline, maxIncreaseRatio, minIncreaseBytes);
+            }
+        }
+        const missingKeys = [
+            ...new Set([
+                ...findMissingKeys(current, limits),
+                ...findMissingKeys(current, baseline)
+            ])
+        ];
+        if (missingKeys.length) {
+            core.warning(`Tracked but absent from current-path, so unenforced: ${missingKeys.join(', ')}`);
         }
         if (headroom.length) {
             core.info('Headroom:');
             for (const finding of headroom) {
                 const line = formatHeadroomLine(finding);
                 if (finding.fail) {
-                    core.info(`  ${line}`);
+                    core.error(line);
                 }
                 else {
                     core.warning(line);
@@ -27841,13 +27873,13 @@ async function run(core) {
         else {
             core.info('Headroom: skipped (no max-bytes or limits-path).');
         }
-        if (skippedRegression) {
-            core.info('Regression: skipped (baseline missing or unreadable).');
+        if (regressionSkipReason) {
+            core.info(`Regression: skipped (${regressionSkipReason}).`);
         }
         else if (regressions.length) {
             core.info('Significant increases vs baseline:');
             for (const line of formatRegressionLines(regressions)) {
-                core.info(`  ${line}`);
+                core.error(line);
             }
         }
         else {
@@ -27857,8 +27889,9 @@ async function run(core) {
         const summary = buildStepSummary({
             headroom,
             regressions,
-            skippedRegression,
+            regressionSkipReason,
             skippedHeadroom,
+            missingKeys,
             failed
         });
         await core.summary.addRaw(summary).write();

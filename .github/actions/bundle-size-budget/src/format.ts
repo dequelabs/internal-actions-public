@@ -23,8 +23,9 @@ export function formatRegressionLines(findings: RegressionFinding[]): string[] {
 export function buildStepSummary(options: {
   headroom: HeadroomFinding[]
   regressions: RegressionFinding[]
-  skippedRegression: boolean
+  regressionSkipReason: string | null
   skippedHeadroom: boolean
+  missingKeys: string[]
   failed: boolean
 }): string {
   const lines: string[] = ['## Bundle size budget', '']
@@ -44,9 +45,9 @@ export function buildStepSummary(options: {
     lines.push('')
   }
 
-  if (options.skippedRegression) {
+  if (options.regressionSkipReason) {
     lines.push(
-      '_Regression check skipped (baseline missing or unreadable)._',
+      `_Regression check skipped (${options.regressionSkipReason})._`,
       ''
     )
   } else if (options.regressions.length === 0) {
@@ -55,6 +56,19 @@ export function buildStepSummary(options: {
     lines.push('### Significant increases vs baseline', '')
     for (const line of formatRegressionLines(options.regressions)) {
       lines.push(`- ${line}`)
+    }
+    lines.push('')
+  }
+
+  if (options.missingKeys.length) {
+    lines.push(
+      '### Unenforced keys',
+      '',
+      'Tracked in `limits-path`/baseline but absent from `current-path`, so no budget applied:',
+      ''
+    )
+    for (const key of options.missingKeys) {
+      lines.push(`- \`${key}\``)
     }
     lines.push('')
   }

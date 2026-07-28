@@ -8,9 +8,11 @@ inputs:
     required: true
   baseline-path:
     description: >
-      Path to the baseline sizes JSON map. When missing, regression is skipped
-      unless fail-on-missing-baseline is true; headroom still runs.
-    required: true
+      Path to the baseline sizes JSON map. When the file is missing, regression
+      is skipped unless fail-on-missing-baseline is true; headroom still runs.
+      Omit it entirely for a headroom-only check.
+    required: false
+    default: ''
   max-increase-ratio:
     description: Fail when an asset grows by at least this fraction of its baseline size
     required: false

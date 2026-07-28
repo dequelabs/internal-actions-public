@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { checkHeadroom, checkRegression, resolveLimit } from './check.ts'
+import {
+  checkHeadroom,
+  checkRegression,
+  findMissingKeys,
+  resolveLimit
+} from './check.ts'
 
 describe('resolveLimit', () => {
   it('prefers per-key limits over maxBytes', () => {
@@ -47,6 +52,17 @@ describe('checkHeadroom', () => {
     assert.deepEqual(findings, [
       { key: 'a', size: 90, limit: 100, fail: false }
     ])
+  })
+})
+
+describe('findMissingKeys', () => {
+  it('returns tracked keys that are absent from current', () => {
+    assert.deepEqual(findMissingKeys({ a: 1 }, { a: 2, b: 3 }), ['b'])
+  })
+
+  it('returns nothing for a null map or a fully covered map', () => {
+    assert.deepEqual(findMissingKeys({ a: 1 }, null), [])
+    assert.deepEqual(findMissingKeys({ a: 1, b: 2 }, { a: 2 }), [])
   })
 })
 
