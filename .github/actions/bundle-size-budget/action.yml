@@ -1,0 +1,49 @@
+name: bundle-size-budget
+description: >
+  Compare a flat size-map JSON against absolute headroom limits and a baseline
+  for significant per-PR regressions.
+inputs:
+  current-path:
+    description: Path to the current (head) sizes JSON map of name → bytes
+    required: true
+  baseline-path:
+    description: >
+      Path to the baseline sizes JSON map. When the file is missing, regression
+      is skipped unless fail-on-missing-baseline is true; headroom still runs.
+      Omit it entirely for a headroom-only check.
+    required: false
+    default: ''
+  max-increase-ratio:
+    description: Fail when an asset grows by at least this fraction of its baseline size
+    required: false
+    default: '0.1'
+  min-increase-bytes:
+    description: >
+      Minimum absolute growth (bytes or with kb/mb/gb suffix) required before a
+      regression fails. Combined with max-increase-ratio (both must be met).
+    required: false
+    default: '150kb'
+  fail-on-missing-baseline:
+    description: Fail the action when baseline-path cannot be read
+    required: false
+    default: 'false'
+  warn-ratio:
+    description: >
+      Fraction of the absolute limit at which to warn. Headroom is skipped when
+      neither max-bytes nor limits-path is set.
+    required: false
+    default: '0.85'
+  max-bytes:
+    description: >
+      Uniform absolute size limit (bytes or kb/mb/gb) applied to every current
+      key. Overridden per key by limits-path when present.
+    required: false
+    default: ''
+  limits-path:
+    description: Optional JSON map of name → max bytes (overrides max-bytes for matching keys)
+    required: false
+    default: ''
+
+runs:
+  using: 'node24'
+  main: 'dist/index.js'
