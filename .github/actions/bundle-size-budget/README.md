@@ -67,7 +67,7 @@ Findings are written to the job log and `$GITHUB_STEP_SUMMARY`.
 | `max-bytes`                | No       | —       | Uniform absolute limit for every current key                                             |
 | `limits-path`              | No       | —       | Per-key limits JSON; overrides `max-bytes` for matching keys                             |
 
-`current-path`, `baseline-path`, and `limits-path` must be inside `GITHUB_WORKSPACE`. A path outside it fails the action.
+`current-path`, `baseline-path`, and `limits-path` must be inside `GITHUB_WORKSPACE`. A `current-path` or `limits-path` outside it fails the action. A `baseline-path` outside it is treated like a missing baseline.
 
 If neither `max-bytes` nor `limits-path` is set, headroom is skipped. If
 `baseline-path` is omitted, regression is skipped.
