@@ -52433,6 +52433,20 @@ function formatOutput(licenseChecker, merged, format, customFields) {
     }
 }
 
+;// CONCATENATED MODULE: ./src/resolveWorkspacePath.ts
+
+function resolveWorkspacePath(input, label) {
+    const workspace = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+    const resolved = external_node_path_default().resolve(workspace, input);
+    const relative = external_node_path_default().relative(workspace, resolved);
+    if (relative === '..' ||
+        relative.startsWith(`..${(external_node_path_default()).sep}`) ||
+        external_node_path_default().isAbsolute(relative)) {
+        throw new Error(`${label} must be inside the workspace: ${input}`);
+    }
+    return resolved;
+}
+
 ;// CONCATENATED MODULE: ./src/types.ts
 const DEPENDENCY_TYPES = ['production', 'development', 'all'];
 const DETAILS_OUTPUT_FORMATS = [
@@ -52443,6 +52457,7 @@ const DETAILS_OUTPUT_FORMATS = [
 ];
 
 ;// CONCATENATED MODULE: ./src/run.ts
+
 
 
 
@@ -52463,6 +52478,16 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
         const detailsOutputFormat = core.getInput('details-output-format');
         const excludePackages = core.getInput('exclude-packages');
         const excludePackagesStartingWith = core.getInput('exclude-packages-starting-with');
+        const resolvedStartPath = resolveWorkspacePath(startPath, 'start-path');
+        const resolvedCustomFieldsPath = customFieldsPath
+            ? resolveWorkspacePath(customFieldsPath, 'custom-fields-path')
+            : '';
+        const resolvedClarificationsPath = clarificationsPath
+            ? resolveWorkspacePath(clarificationsPath, 'clarifications-path')
+            : '';
+        const resolvedDetailsOutputPath = detailsOutputPath
+            ? resolveWorkspacePath(detailsOutputPath, 'details-output-path')
+            : '';
         if (!DEPENDENCY_TYPES.includes(dependencyType)) {
             core.setFailed(`Invalid dependency-type: ${dependencyType}. Allowed values are: ${DEPENDENCY_TYPES.join(', ')}`);
             return;
@@ -52471,16 +52496,15 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             core.setFailed(`Invalid details-output-format: ${detailsOutputFormat}. Allowed values are: ${DETAILS_OUTPUT_FORMATS.join(', ')}`);
             return;
         }
-        if (!external_node_fs_default().existsSync(external_node_path_default().resolve(startPath))) {
+        if (!external_node_fs_default().existsSync(resolvedStartPath)) {
             core.setFailed(`The file specified by start-path does not exist: ${startPath}`);
             return;
         }
-        if (customFieldsPath && !external_node_fs_default().existsSync(external_node_path_default().resolve(customFieldsPath))) {
+        if (customFieldsPath && !external_node_fs_default().existsSync(resolvedCustomFieldsPath)) {
             core.setFailed(`The file specified by custom-fields-path does not exist: ${customFieldsPath}`);
             return;
         }
-        if (clarificationsPath &&
-            !external_node_fs_default().existsSync(external_node_path_default().resolve(clarificationsPath))) {
+        if (clarificationsPath && !external_node_fs_default().existsSync(resolvedClarificationsPath)) {
             core.setFailed(`The file specified by clarifications-path does not exist: ${clarificationsPath}`);
             return;
         }
@@ -52493,7 +52517,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
         if (customFieldsPath) {
             core.info(`Provided custom fields path "${customFieldsPath}", reading custom fields...`);
             try {
-                const customFieldsContent = external_node_fs_default().readFileSync(external_node_path_default().resolve(customFieldsPath), 'utf8');
+                const customFieldsContent = external_node_fs_default().readFileSync(resolvedCustomFieldsPath, 'utf8');
                 customFields = JSON.parse(customFieldsContent);
                 core.info(`Custom fields: ${customFieldsContent}`);
             }
@@ -52502,10 +52526,9 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                 return;
             }
         }
-        const resolvedStart = external_node_path_default().resolve(startPath);
         let absPath;
         try {
-            absPath = normalizeScanPath(resolvedStart);
+            absPath = normalizeScanPath(resolvedStartPath);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -52539,7 +52562,9 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
                     ...(excludePackagesStartingWith.trim().length && {
                         excludePackagesStartingWith
                     }),
-                    ...(clarificationsPath.trim().length && { clarificationsPath })
+                    ...(clarificationsPath.trim().length && {
+                        clarificationsPath: resolvedClarificationsPath
+                    })
                 });
             }
             catch (error) {
@@ -52555,7 +52580,7 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             }
             if (detailsOutputPath) {
                 const formatted = formatOutput(licenseChecker, result, detailsOutputFormat, customFields);
-                external_node_fs_default().writeFileSync(external_node_path_default().resolve(detailsOutputPath), formatted, 'utf8');
+                external_node_fs_default().writeFileSync(resolvedDetailsOutputPath, formatted, 'utf8');
             }
             const summary = licenseChecker.asSummary(result);
             if (summary.length) {
@@ -52571,13 +52596,15 @@ async function run({ core, licenseChecker, detectPnpm = detectPnpm_detectPnpm, f
             dependencyType,
             customFields,
             onlyAllow,
-            detailsOutputPath,
+            detailsOutputPath: resolvedDetailsOutputPath,
             detailsOutputFormat,
             ...(excludePackages.trim().length && { excludePackages }),
             ...(excludePackagesStartingWith.trim().length && {
                 excludePackagesStartingWith
             }),
-            ...(clarificationsPath.trim().length && { clarificationsPath })
+            ...(clarificationsPath.trim().length && {
+                clarificationsPath: resolvedClarificationsPath
+            })
         };
         core.info(`Provided options:\n${JSON.stringify(options)}`);
         const result = await checkLicenses(licenseChecker, options, core);
