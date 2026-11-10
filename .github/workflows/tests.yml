@@ -133,26 +133,29 @@ jobs:
           cache-dependency-path: 'pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter bundle-size-budget run build
+      # The action rejects paths outside GITHUB_WORKSPACE, so the fixtures live
+      # inside it rather than in RUNNER_TEMP.
       - name: Write size-map fixtures
         run: |
-          echo '{"a.js": 1000}' > "$RUNNER_TEMP/current.json"
-          echo '{"a.js": 900}' > "$RUNNER_TEMP/baseline.json"
+          mkdir -p bundle-size-fixtures
+          echo '{"a.js": 1000}' > bundle-size-fixtures/current.json
+          echo '{"a.js": 900}' > bundle-size-fixtures/baseline.json
       # The unit tests stub getInput, so only running the real action verifies
       # that action.yml's input names match run.ts and that the node24
       # entrypoint boots from the committed dist.
       - name: Within budget
         uses: ./.github/actions/bundle-size-budget
         with:
-          current-path: ${{ runner.temp }}/current.json
-          baseline-path: ${{ runner.temp }}/baseline.json
+          current-path: bundle-size-fixtures/current.json
+          baseline-path: bundle-size-fixtures/baseline.json
           max-bytes: 2000
       - name: Over budget
         id: over-budget
         continue-on-error: true
         uses: ./.github/actions/bundle-size-budget
         with:
-          current-path: ${{ runner.temp }}/current.json
-          baseline-path: ${{ runner.temp }}/baseline.json
+          current-path: bundle-size-fixtures/current.json
+          baseline-path: bundle-size-fixtures/baseline.json
           max-bytes: 500
       - name: Verify the breach failed the step
         run: |
