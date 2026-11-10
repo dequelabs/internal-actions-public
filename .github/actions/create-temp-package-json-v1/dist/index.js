@@ -27549,6 +27549,35 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
@@ -27565,7 +27594,25 @@ var core = __nccwpck_require__(1514);
 var external_fs_ = __nccwpck_require__(9896);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(6928);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = require("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: ./src/resolveWorkspacePath.ts
+
+function resolveWorkspacePath(input, label) {
+    const workspace = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+    const resolved = external_node_path_default().resolve(workspace, input);
+    const relative = external_node_path_default().relative(workspace, resolved);
+    if (relative === '..' ||
+        relative.startsWith(`..${(external_node_path_default()).sep}`) ||
+        external_node_path_default().isAbsolute(relative)) {
+        throw new Error(`${label} must be inside the workspace: ${input}`);
+    }
+    return resolved;
+}
+
 ;// CONCATENATED MODULE: ./src/run.ts
+
 
 async function run(core, fileSystem) {
     try {
@@ -27588,18 +27635,24 @@ async function run(core, fileSystem) {
             return;
         }
         core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`);
-        mkdirSync(outputPath, { recursive: true });
+        const resolvedOutputPath = resolveWorkspacePath(outputPath, 'output-path');
+        const workspaces = workspacePaths.map(workspacePath => ({
+            workspacePath,
+            resolvedWorkspacePath: resolveWorkspacePath(workspacePath, 'workspace-path-list')
+        }));
+        mkdirSync(resolvedOutputPath, { recursive: true });
         let mergedDependencies = {};
         const dependenciesByWorkspaces = {};
-        for (const workspacePath of workspacePaths) {
+        for (const { workspacePath, resolvedWorkspacePath } of workspaces) {
             core.info(`Processing the workspace: ${workspacePath}...`);
             const packageJsonPath = (0,external_path_.join)(workspacePath, 'package.json');
-            if (!existsSync(packageJsonPath)) {
+            const resolvedPackageJsonPath = (0,external_path_.join)(resolvedWorkspacePath, 'package.json');
+            if (!existsSync(resolvedPackageJsonPath)) {
                 core.warning(`The "package.json" file is not found in the "${workspacePath}" workspace. Skipping...`);
                 continue;
             }
             try {
-                const packageJsonContent = readFileSync(packageJsonPath, 'utf8');
+                const packageJsonContent = readFileSync(resolvedPackageJsonPath, 'utf8');
                 if (!packageJsonContent.length) {
                     core.warning(`The "package.json" file in the "${workspacePath}" workspace is empty. Skipping...`);
                     continue;
@@ -27630,15 +27683,16 @@ async function run(core, fileSystem) {
         };
         const tempPackageJsonPath = (0,external_path_.join)(outputPath, 'package.json');
         core.info(`Creating temporary "${tempPackageJsonPath}" file with the production dependencies...`);
-        writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2));
+        writeFileSync((0,external_path_.join)(resolvedOutputPath, 'package.json'), JSON.stringify(tempPackageJson, null, 2));
         core.info(`Temporary package.json created successfully`);
         const nodeModulesSymlinkPath = (0,external_path_.join)(outputPath, 'node_modules');
-        if (existsSync(nodeModulesSymlinkPath)) {
+        const resolvedNodeModulesSymlinkPath = (0,external_path_.join)(resolvedOutputPath, 'node_modules');
+        if (existsSync(resolvedNodeModulesSymlinkPath)) {
             core.info(`Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`);
-            rmSync(nodeModulesSymlinkPath, { recursive: true, force: true });
+            rmSync(resolvedNodeModulesSymlinkPath, { recursive: true, force: true });
         }
-        symlinkSync((0,external_path_.resolve)('./node_modules'), nodeModulesSymlinkPath, 'dir');
-        if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
+        symlinkSync((0,external_path_.resolve)('./node_modules'), resolvedNodeModulesSymlinkPath, 'dir');
+        if (!lstatSync(resolvedNodeModulesSymlinkPath).isSymbolicLink()) {
             core.setFailed(`Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`);
             return;
         }

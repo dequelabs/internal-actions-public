@@ -1,41 +1,37 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import path from 'node:path'
+import sinon from 'sinon'
 import { resolveWorkspacePath } from './resolveWorkspacePath.ts'
 
 describe('resolveWorkspacePath', () => {
-  const workspace = path.resolve('/workspace/repo')
-  let originalWorkspace: string | undefined
+  let envStub: sinon.SinonStub
 
   beforeEach(() => {
-    originalWorkspace = process.env.GITHUB_WORKSPACE
-    process.env.GITHUB_WORKSPACE = workspace
+    envStub = sinon
+      .stub(process, 'env')
+      .value({ ...process.env, GITHUB_WORKSPACE: '/workspace/repo' })
   })
 
-  afterEach(() => {
-    if (originalWorkspace === undefined) {
-      delete process.env.GITHUB_WORKSPACE
-    } else {
-      process.env.GITHUB_WORKSPACE = originalWorkspace
-    }
-  })
+  afterEach(() => sinon.restore())
 
   it('resolves a relative path against the workspace', () => {
     assert.equal(
       resolveWorkspacePath('dist/sizes.json', 'current-path'),
-      path.join(workspace, 'dist/sizes.json')
+      '/workspace/repo/dist/sizes.json'
     )
   })
 
   it('accepts an absolute path inside the workspace', () => {
-    const inside = path.join(workspace, 'sizes.json')
-    assert.equal(resolveWorkspacePath(inside, 'current-path'), inside)
+    assert.equal(
+      resolveWorkspacePath('/workspace/repo/sizes.json', 'current-path'),
+      '/workspace/repo/sizes.json'
+    )
   })
 
   it('accepts a file name that starts with two dots', () => {
     assert.equal(
       resolveWorkspacePath('..sizes.json', 'current-path'),
-      path.join(workspace, '..sizes.json')
+      '/workspace/repo/..sizes.json'
     )
   })
 
@@ -61,10 +57,11 @@ describe('resolveWorkspacePath', () => {
   })
 
   it('falls back to the current directory when GITHUB_WORKSPACE is unset', () => {
-    delete process.env.GITHUB_WORKSPACE
+    envStub.value({})
+    sinon.stub(process, 'cwd').returns('/runner/work')
     assert.equal(
       resolveWorkspacePath('sizes.json', 'current-path'),
-      path.join(process.cwd(), 'sizes.json')
+      '/runner/work/sizes.json'
     )
   })
 })

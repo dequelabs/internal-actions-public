@@ -1,4 +1,5 @@
 import { join, resolve } from 'path'
+import { resolveWorkspacePath } from './resolveWorkspacePath.ts'
 import type { Core, FileSystem } from './types.ts'
 
 interface WorkspaceDependencies {
@@ -48,18 +49,31 @@ export default async function run(core: Core, fileSystem: FileSystem) {
 
     core.info(`Provided workspaces: ${JSON.stringify(workspacePaths)}`)
 
+    const resolvedOutputPath = resolveWorkspacePath(outputPath, 'output-path')
+    const workspaces = workspacePaths.map(workspacePath => ({
+      workspacePath,
+      resolvedWorkspacePath: resolveWorkspacePath(
+        workspacePath,
+        'workspace-path-list'
+      )
+    }))
+
     // Create output directory
-    mkdirSync(outputPath, { recursive: true })
+    mkdirSync(resolvedOutputPath, { recursive: true })
 
     let mergedDependencies: WorkspaceDependencies = {}
     const dependenciesByWorkspaces: DependenciesByWorkspaces = {}
 
-    for (const workspacePath of workspacePaths) {
+    for (const { workspacePath, resolvedWorkspacePath } of workspaces) {
       core.info(`Processing the workspace: ${workspacePath}...`)
 
       const packageJsonPath = join(workspacePath, 'package.json')
+      const resolvedPackageJsonPath = join(
+        resolvedWorkspacePath,
+        'package.json'
+      )
 
-      if (!existsSync(packageJsonPath)) {
+      if (!existsSync(resolvedPackageJsonPath)) {
         core.warning(
           `The "package.json" file is not found in the "${workspacePath}" workspace. Skipping...`
         )
@@ -67,7 +81,7 @@ export default async function run(core: Core, fileSystem: FileSystem) {
       }
 
       try {
-        const packageJsonContent = readFileSync(packageJsonPath, 'utf8')
+        const packageJsonContent = readFileSync(resolvedPackageJsonPath, 'utf8')
 
         if (!packageJsonContent.length) {
           core.warning(
@@ -117,25 +131,36 @@ export default async function run(core: Core, fileSystem: FileSystem) {
       `Creating temporary "${tempPackageJsonPath}" file with the production dependencies...`
     )
 
-    writeFileSync(tempPackageJsonPath, JSON.stringify(tempPackageJson, null, 2))
+    writeFileSync(
+      join(resolvedOutputPath, 'package.json'),
+      JSON.stringify(tempPackageJson, null, 2)
+    )
 
     core.info(`Temporary package.json created successfully`)
 
     // Create symlink to node_modules
     const nodeModulesSymlinkPath = join(outputPath, 'node_modules')
+    const resolvedNodeModulesSymlinkPath = join(
+      resolvedOutputPath,
+      'node_modules'
+    )
 
     // Remove existing symlink if it exists to avoid EEXIST error
-    if (existsSync(nodeModulesSymlinkPath)) {
+    if (existsSync(resolvedNodeModulesSymlinkPath)) {
       core.info(
         `Removing existing "${nodeModulesSymlinkPath}" before creating symlink...`
       )
-      rmSync(nodeModulesSymlinkPath, { recursive: true, force: true })
+      rmSync(resolvedNodeModulesSymlinkPath, { recursive: true, force: true })
     }
 
-    symlinkSync(resolve('./node_modules'), nodeModulesSymlinkPath, 'dir')
+    symlinkSync(
+      resolve('./node_modules'),
+      resolvedNodeModulesSymlinkPath,
+      'dir'
+    )
 
     // Verify symlink was created
-    if (!lstatSync(nodeModulesSymlinkPath).isSymbolicLink()) {
+    if (!lstatSync(resolvedNodeModulesSymlinkPath).isSymbolicLink()) {
       core.setFailed(
         `Failed to create symlink to temporary "${nodeModulesSymlinkPath}" directory`
       )

@@ -16,12 +16,12 @@ describe('run', () => {
   let core: sinon.SinonStubbedInstance<Core> & { summary: SummaryStub }
   let tmpDir: string
   let inputs: Record<string, string>
-  let originalWorkspace: string | undefined
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bundle-size-budget-'))
-    originalWorkspace = process.env.GITHUB_WORKSPACE
-    process.env.GITHUB_WORKSPACE = tmpDir
+    sinon
+      .stub(process, 'env')
+      .value({ ...process.env, GITHUB_WORKSPACE: tmpDir })
     inputs = {
       'current-path': '',
       'baseline-path': path.join(tmpDir, 'missing.json'),
@@ -51,11 +51,6 @@ describe('run', () => {
   afterEach(() => {
     sinon.restore()
     fs.rmSync(tmpDir, { recursive: true, force: true })
-    if (originalWorkspace === undefined) {
-      delete process.env.GITHUB_WORKSPACE
-    } else {
-      process.env.GITHUB_WORKSPACE = originalWorkspace
-    }
   })
 
   function writeJson(name: string, value: unknown): string {
