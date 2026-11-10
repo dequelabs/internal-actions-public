@@ -54,38 +54,47 @@ jobs:
           - name: pnpm-workspaces
             expect: 'is-number@6.0.0 is-number@7.0.0 is-odd@3.0.1'
     steps:
+      # The action rejects paths outside GITHUB_WORKSPACE, so the fixture must
+      # live inside it. The repo is checked out into a subfolder so the fixture
+      # can sit beside it, outside the repo's own pnpm workspace.
       - uses: actions/checkout@v4
+        with:
+          path: repo
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          package_json_file: repo/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: 'repo/.nvmrc'
           cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
+          cache-dependency-path: 'repo/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
+        working-directory: repo
       - run: pnpm --filter npm-license-checker run build
+        working-directory: repo
       - name: Stage fixture outside the repo
         # The action walks up from start-path looking for pnpm-workspace.yaml to
         # locate the workspace root. Against the in-repo fixture path it would
         # now find THIS repo's root pnpm-workspace.yaml and misclassify the
         # fixture; copying it out reproduces a real consumer-repo layout.
-        run: cp -R .github/actions/npm-license-checker/src/fixtures/${{ matrix.fixture.name }} "$RUNNER_TEMP/fixture"
+        run: cp -R repo/.github/actions/npm-license-checker/src/fixtures/${{ matrix.fixture.name }} fixture
       - name: Install fixture deps
-        working-directory: ${{ runner.temp }}/fixture
+        working-directory: fixture
         run: pnpm install --frozen-lockfile
-      - uses: ./.github/actions/npm-license-checker
+      - uses: ./repo/.github/actions/npm-license-checker
         with:
-          start-path: ${{ runner.temp }}/fixture
+          start-path: fixture
           dependency-type: production
-          details-output-path: /tmp/credits.json
+          details-output-path: credits.json
           exclude-packages-starting-with: '@deque/'
       - name: Verify output
         run: |
-          test -s /tmp/credits.json
+          test -s credits.json
           expected=$(echo "${{ matrix.fixture.expect }}" | tr ' ' '\n' | sort)
-          actual=$(jq -r 'keys[]' /tmp/credits.json | sort)
+          actual=$(jq -r 'keys[]' credits.json | sort)
           if ! diff <(echo "$expected") <(echo "$actual"); then
             echo "Expected packages did not match actual output"
-            cat /tmp/credits.json
+            cat credits.json
             exit 1
           fi
 
