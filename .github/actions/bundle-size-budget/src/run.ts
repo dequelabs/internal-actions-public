@@ -1,5 +1,4 @@
 import fs from 'node:fs'
-import path from 'node:path'
 import { checkHeadroom, checkRegression, findMissingKeys } from './check.ts'
 import {
   buildStepSummary,
@@ -7,6 +6,7 @@ import {
   formatRegressionLines
 } from './format.ts'
 import { parseBoolean, parseBytes, parseRatio, parseSizeMap } from './parse.ts'
+import { resolveWorkspacePath } from './resolveWorkspacePath.ts'
 import type { Core, SizeMap } from './types.ts'
 
 type ReadMapResult =
@@ -14,11 +14,11 @@ type ReadMapResult =
   | { map: null; error: string }
 
 function readOptionalMap(filePath: string, label: string): ReadMapResult {
-  const resolved = path.resolve(filePath)
-  if (!fs.existsSync(resolved)) {
-    return { map: null, error: `${label} not found at ${filePath}` }
-  }
   try {
+    const resolved = resolveWorkspacePath(filePath, label)
+    if (!fs.existsSync(resolved)) {
+      return { map: null, error: `${label} not found at ${filePath}` }
+    }
     const raw = fs.readFileSync(resolved, 'utf8')
     return { map: parseSizeMap(raw, label), error: null }
   } catch (error) {
@@ -49,7 +49,7 @@ export default async function run(core: Core): Promise<void> {
 
     const maxBytes = maxBytesInput.trim() ? parseBytes(maxBytesInput) : null
 
-    const currentResolved = path.resolve(currentPath)
+    const currentResolved = resolveWorkspacePath(currentPath, 'current-path')
     if (!fs.existsSync(currentResolved)) {
       core.setFailed(
         `current-path does not exist: ${currentPath}. Emit a size map before running this action.`

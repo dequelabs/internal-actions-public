@@ -297,10 +297,7 @@ describe('run', () => {
 
       await run(core, fileSystem)
 
-      assert.strictEqual(
-        setFailedSpy.calledOnceWithExactly(errorMessage),
-        true
-      )
+      assert.strictEqual(setFailedSpy.calledOnceWithExactly(errorMessage), true)
       assert.strictEqual(setOutputSpy.notCalled, true)
     })
 

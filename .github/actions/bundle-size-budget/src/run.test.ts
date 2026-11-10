@@ -16,9 +16,12 @@ describe('run', () => {
   let core: sinon.SinonStubbedInstance<Core> & { summary: SummaryStub }
   let tmpDir: string
   let inputs: Record<string, string>
+  let originalWorkspace: string | undefined
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bundle-size-budget-'))
+    originalWorkspace = process.env.GITHUB_WORKSPACE
+    process.env.GITHUB_WORKSPACE = tmpDir
     inputs = {
       'current-path': '',
       'baseline-path': path.join(tmpDir, 'missing.json'),
@@ -48,6 +51,11 @@ describe('run', () => {
   afterEach(() => {
     sinon.restore()
     fs.rmSync(tmpDir, { recursive: true, force: true })
+    if (originalWorkspace === undefined) {
+      delete process.env.GITHUB_WORKSPACE
+    } else {
+      process.env.GITHUB_WORKSPACE = originalWorkspace
+    }
   })
 
   function writeJson(name: string, value: unknown): string {
@@ -61,6 +69,50 @@ describe('run', () => {
     await run(core)
     assert.equal(core.setFailed.calledOnce, true)
     assert.match(core.setFailed.firstCall.args[0] as string, /does not exist/)
+  })
+
+  it('fails when current-path is outside the workspace', async () => {
+    inputs['current-path'] = '../current.json'
+    await run(core)
+    assert.equal(core.setFailed.calledOnce, true)
+    assert.equal(
+      core.setFailed.firstCall.args[0],
+      'current-path must be inside the workspace: ../current.json'
+    )
+  })
+
+  it('fails when limits-path is outside the workspace', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 1 })
+    inputs['limits-path'] = '/etc/limits.json'
+    await run(core)
+    assert.equal(core.setFailed.calledOnce, true)
+    assert.equal(
+      core.setFailed.firstCall.args[0],
+      'limits-path must be inside the workspace: /etc/limits.json'
+    )
+  })
+
+  it('warns and skips regression when baseline-path is outside the workspace', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 10 })
+    inputs['baseline-path'] = '../baseline.json'
+    await run(core)
+    assert.equal(core.setFailed.called, false)
+    assert.equal(
+      core.warning.firstCall.args[0],
+      'baseline-path must be inside the workspace: ../baseline.json'
+    )
+  })
+
+  it('fails when baseline-path is outside the workspace and fail-on-missing-baseline is true', async () => {
+    inputs['current-path'] = writeJson('current.json', { a: 10 })
+    inputs['baseline-path'] = '../baseline.json'
+    inputs['fail-on-missing-baseline'] = 'true'
+    await run(core)
+    assert.equal(core.setFailed.calledOnce, true)
+    assert.equal(
+      core.setFailed.firstCall.args[0],
+      'baseline-path must be inside the workspace: ../baseline.json'
+    )
   })
 
   it('fails when current-path is invalid JSON', async () => {
