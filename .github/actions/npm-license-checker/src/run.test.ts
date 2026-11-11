@@ -14,9 +14,10 @@ describe('run', () => {
   let mockDetectPnpm: sinon.SinonStub
   let mockFindPnpmWorkspaceRoot: sinon.SinonStub
   let mockScanPnpm: sinon.SinonStub
+  let envStub: sinon.SinonStub
 
   beforeEach(() => {
-    sinon
+    envStub = sinon
       .stub(process, 'env')
       .value({ ...process.env, GITHUB_WORKSPACE: '/workspace/repo' })
 
@@ -842,13 +843,15 @@ describe('run', () => {
     })
 
     it('should use default detectPnpm/scanPnpm when not injected', async () => {
-      // Pass no DI — real defaults will try to detect pnpm from cwd. Since the
-      // repo root has a node_modules (from our install), defaults are exercised.
+      envStub.value({ ...process.env, GITHUB_WORKSPACE: process.cwd() })
+
       await run({ core, licenseChecker })
 
-      // Either the scan succeeded (reached asSummary) or failed (setFailed) —
-      // either way, the defaults were invoked.
-      assert.ok(core.setFailed.called || licenseChecker.asSummary.called)
+      assert.strictEqual(core.setFailed.notCalled, true)
+      assert.strictEqual(licenseChecker.asSummary.calledOnce, true)
+      assert.strictEqual(licenseChecker.init.notCalled, true)
+      const scanned = licenseChecker.asSummary.firstCall.args[0] as ModuleInfos
+      assert.ok(Object.keys(scanned).some(key => key.startsWith('semver@')))
     })
   })
 })
