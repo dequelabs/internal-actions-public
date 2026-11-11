@@ -59,6 +59,21 @@ describe('resolveWorkspacePath', () => {
     )
   })
 
+  it('rejects an absolute path in a sibling folder that shares the workspace prefix', () => {
+    assert.throws(
+      () =>
+        resolveWorkspacePath('/workspace/repo-evil/package.json', 'start-path'),
+      /start-path must be inside the workspace: \/workspace\/repo-evil\/package\.json/
+    )
+  })
+
+  it('rejects a relative path to a sibling folder that shares the workspace prefix', () => {
+    assert.throws(
+      () => resolveWorkspacePath('../repo-evil/package.json', 'start-path'),
+      /start-path must be inside the workspace: \.\.\/repo-evil\/package\.json/
+    )
+  })
+
   it('falls back to the current directory when GITHUB_WORKSPACE is unset', () => {
     envStub.value({})
     sinon.stub(process, 'cwd').returns('/runner/work')
