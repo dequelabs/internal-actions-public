@@ -308,7 +308,10 @@ describe('run (VPAT:SLA Breach Labels Action)', () => {
     await run(mockCore, mockGitHub)
 
     assert.strictEqual(mockOctokitRemoveLabel.calledOnce, true)
-    assert.strictEqual(mockOctokitRemoveLabel.firstCall.args[0].name, 'VPAT:SLA P3')
+    assert.strictEqual(
+      mockOctokitRemoveLabel.firstCall.args[0].name,
+      'VPAT:SLA P3'
+    )
     assert.strictEqual(mockOctokitAddLabels.called, false)
     assert.strictEqual(mockCoreSetFailed.called, false)
   })

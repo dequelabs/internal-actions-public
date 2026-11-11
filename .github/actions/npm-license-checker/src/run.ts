@@ -8,6 +8,7 @@ import defaultScanPnpm from './scanPnpm.ts'
 import applyExcludesAndClarifications from './applyExcludesAndClarifications.ts'
 import checkOnlyAllow from './checkOnlyAllow.ts'
 import formatOutput from './formatOutput.ts'
+import { resolveWorkspacePath } from './resolveWorkspacePath.ts'
 import {
   DEPENDENCY_TYPES,
   DETAILS_OUTPUT_FORMATS,
@@ -41,6 +42,17 @@ export default async function run({
       'exclude-packages-starting-with'
     )
 
+    const resolvedStartPath = resolveWorkspacePath(startPath, 'start-path')
+    const resolvedCustomFieldsPath = customFieldsPath
+      ? resolveWorkspacePath(customFieldsPath, 'custom-fields-path')
+      : ''
+    const resolvedClarificationsPath = clarificationsPath
+      ? resolveWorkspacePath(clarificationsPath, 'clarifications-path')
+      : ''
+    const resolvedDetailsOutputPath = detailsOutputPath
+      ? resolveWorkspacePath(detailsOutputPath, 'details-output-path')
+      : ''
+
     if (!DEPENDENCY_TYPES.includes(dependencyType)) {
       core.setFailed(
         `Invalid dependency-type: ${dependencyType}. Allowed values are: ${DEPENDENCY_TYPES.join(', ')}`
@@ -55,24 +67,21 @@ export default async function run({
       return
     }
 
-    if (!fs.existsSync(path.resolve(startPath))) {
+    if (!fs.existsSync(resolvedStartPath)) {
       core.setFailed(
         `The file specified by start-path does not exist: ${startPath}`
       )
       return
     }
 
-    if (customFieldsPath && !fs.existsSync(path.resolve(customFieldsPath))) {
+    if (customFieldsPath && !fs.existsSync(resolvedCustomFieldsPath)) {
       core.setFailed(
         `The file specified by custom-fields-path does not exist: ${customFieldsPath}`
       )
       return
     }
 
-    if (
-      clarificationsPath &&
-      !fs.existsSync(path.resolve(clarificationsPath))
-    ) {
+    if (clarificationsPath && !fs.existsSync(resolvedClarificationsPath)) {
       core.setFailed(
         `The file specified by clarifications-path does not exist: ${clarificationsPath}`
       )
@@ -91,7 +100,7 @@ export default async function run({
       )
       try {
         const customFieldsContent = fs.readFileSync(
-          path.resolve(customFieldsPath),
+          resolvedCustomFieldsPath,
           'utf8'
         )
         customFields = JSON.parse(customFieldsContent)
@@ -106,13 +115,12 @@ export default async function run({
       }
     }
 
-    const resolvedStart = path.resolve(startPath)
     // Accept either a directory or a `package.json` file; reject any other
     // file type so callers get an actionable error instead of a confusing
     // downstream failure.
     let absPath: string
     try {
-      absPath = normalizeScanPath(resolvedStart)
+      absPath = normalizeScanPath(resolvedStartPath)
     } catch (error) {
       core.setFailed((error as Error).message)
       return
@@ -151,7 +159,9 @@ export default async function run({
           ...(excludePackagesStartingWith.trim().length && {
             excludePackagesStartingWith
           }),
-          ...(clarificationsPath.trim().length && { clarificationsPath })
+          ...(clarificationsPath.trim().length && {
+            clarificationsPath: resolvedClarificationsPath
+          })
         })
       } catch (error) {
         core.setFailed(
@@ -174,7 +184,7 @@ export default async function run({
           detailsOutputFormat,
           customFields
         )
-        fs.writeFileSync(path.resolve(detailsOutputPath), formatted, 'utf8')
+        fs.writeFileSync(resolvedDetailsOutputPath, formatted, 'utf8')
       }
 
       const summary = licenseChecker.asSummary(result)
@@ -191,13 +201,15 @@ export default async function run({
       dependencyType,
       customFields,
       onlyAllow,
-      detailsOutputPath,
+      detailsOutputPath: resolvedDetailsOutputPath,
       detailsOutputFormat,
       ...(excludePackages.trim().length && { excludePackages }),
       ...(excludePackagesStartingWith.trim().length && {
         excludePackagesStartingWith
       }),
-      ...(clarificationsPath.trim().length && { clarificationsPath })
+      ...(clarificationsPath.trim().length && {
+        clarificationsPath: resolvedClarificationsPath
+      })
     }
     core.info(`Provided options:\n${JSON.stringify(options)}`)
 

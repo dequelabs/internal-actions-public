@@ -44,12 +44,15 @@ export default async function checkLicenses(
   )
 
   return new Promise((resolve, reject) => {
-    licenseChecker.init(licenseCheckerOptions, (err: Error, packages: ModuleInfos) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(packages)
+    licenseChecker.init(
+      licenseCheckerOptions,
+      (err: Error, packages: ModuleInfos) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(packages)
+        }
       }
-    })
+    )
   })
 }

@@ -9,7 +9,11 @@ type ListForRepoResponse = {
   }>
 }
 
-type ImpactLevel = 'VPAT:Blocker' | 'VPAT:Critical' | 'VPAT:Serious' | 'VPAT:Moderate'
+type ImpactLevel =
+  | 'VPAT:Blocker'
+  | 'VPAT:Critical'
+  | 'VPAT:Serious'
+  | 'VPAT:Moderate'
 
 export type Core = Pick<typeof core, 'getInput' | 'info' | 'setFailed'>
 export type GitHub = Pick<typeof github, 'getOctokit' | 'context'>

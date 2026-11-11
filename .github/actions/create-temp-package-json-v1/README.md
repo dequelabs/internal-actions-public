@@ -9,6 +9,8 @@ A GitHub Action to create a temporary `package.json` with production dependencie
 | `workspace-path-list` | Yes      | Path list to the workspaces package.json (must be comma separated "./service, ./client") | NA                   |
 | `output-path`         | No       | Path where to create temporary package.json                                              | ./temp-license-check |
 
+Every path in `workspace-path-list` and `output-path` must be inside `GITHUB_WORKSPACE`. A path outside it fails the action.
+
 ## Outputs
 
 | Name        | Description                                               |

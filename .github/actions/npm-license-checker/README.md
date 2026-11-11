@@ -36,6 +36,8 @@ see hoisted dependencies in the root `node_modules`.
 | `exclude-packages`               | No       | A semicolon-separated list of packages to exclude (e.g., 'axe-core;axe-devtools-app;react-wai-accordion')                            | NA                                    |
 | `exclude-packages-starting-with` | No       | A semicolon-separated list of package name prefixes to exclude (e.g., '@deque/;@types/')                                             | NA                                    |
 
+`start-path`, `custom-fields-path`, `clarifications-path`, and `details-output-path` must be inside `GITHUB_WORKSPACE`. A path outside it fails the action.
+
 ## Example usage
 
 ```yaml

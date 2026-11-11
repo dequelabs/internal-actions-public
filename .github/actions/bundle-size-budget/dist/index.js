@@ -27593,9 +27593,6 @@ var core = __nccwpck_require__(1514);
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = require("node:fs");
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_namespaceObject);
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = require("node:path");
-var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
 ;// CONCATENATED MODULE: ./src/check.ts
 function resolveLimit(key, maxBytes, limits) {
     if (limits && Object.prototype.hasOwnProperty.call(limits, key)) {
@@ -27767,6 +27764,23 @@ function buildStepSummary(options) {
     return lines.join('\n');
 }
 
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = require("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: ./src/resolveWorkspacePath.ts
+
+function resolveWorkspacePath(input, label) {
+    const workspace = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+    const resolved = external_node_path_default().resolve(workspace, input);
+    const relative = external_node_path_default().relative(workspace, resolved);
+    if (relative === '..' ||
+        relative.startsWith(`..${(external_node_path_default()).sep}`) ||
+        external_node_path_default().isAbsolute(relative)) {
+        throw new Error(`${label} must be inside the workspace: ${input}`);
+    }
+    return resolved;
+}
+
 ;// CONCATENATED MODULE: ./src/run.ts
 
 
@@ -27774,11 +27788,11 @@ function buildStepSummary(options) {
 
 
 function readOptionalMap(filePath, label) {
-    const resolved = external_node_path_default().resolve(filePath);
-    if (!external_node_fs_default().existsSync(resolved)) {
-        return { map: null, error: `${label} not found at ${filePath}` };
-    }
+    const resolved = resolveWorkspacePath(filePath, label);
     try {
+        if (!external_node_fs_default().existsSync(resolved)) {
+            return { map: null, error: `${label} not found at ${filePath}` };
+        }
         const raw = external_node_fs_default().readFileSync(resolved, 'utf8');
         return { map: parseSizeMap(raw, label), error: null };
     }
@@ -27797,7 +27811,7 @@ async function run(core) {
         const maxBytesInput = core.getInput('max-bytes') || '';
         const limitsPath = core.getInput('limits-path') || '';
         const maxBytes = maxBytesInput.trim() ? parseBytes(maxBytesInput) : null;
-        const currentResolved = external_node_path_default().resolve(currentPath);
+        const currentResolved = resolveWorkspacePath(currentPath, 'current-path');
         if (!external_node_fs_default().existsSync(currentResolved)) {
             core.setFailed(`current-path does not exist: ${currentPath}. Emit a size map before running this action.`);
             return;

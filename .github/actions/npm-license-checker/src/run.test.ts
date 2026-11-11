@@ -2,7 +2,6 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import sinon from 'sinon'
 import fs from 'node:fs'
-import path from 'node:path'
 import run from './run.ts'
 import type { Core, LicenseChecker, ModuleInfos } from './types.ts'
 import type { InitOpts } from 'license-checker-rseidelsohn'
@@ -15,8 +14,13 @@ describe('run', () => {
   let mockDetectPnpm: sinon.SinonStub
   let mockFindPnpmWorkspaceRoot: sinon.SinonStub
   let mockScanPnpm: sinon.SinonStub
+  let envStub: sinon.SinonStub
 
   beforeEach(() => {
+    envStub = sinon
+      .stub(process, 'env')
+      .value({ ...process.env, GITHUB_WORKSPACE: '/workspace/repo' })
+
     // Setup core mock
     core = {
       getInput: sinon.stub(),
@@ -109,7 +113,7 @@ describe('run', () => {
   })
 
   it('should fail when start-path does not exist', async () => {
-    existsSyncStub.withArgs(path.resolve('./package.json')).returns(false)
+    existsSyncStub.withArgs('/workspace/repo/package.json').returns(false)
 
     await run({
       core,
@@ -128,8 +132,10 @@ describe('run', () => {
   })
 
   it('should normalize a package.json start-path to its parent directory', async () => {
-    core.getInput.withArgs('start-path').returns('/tmp/foo/package.json')
-    existsSyncStub.withArgs(path.resolve('/tmp/foo/package.json')).returns(true)
+    core.getInput
+      .withArgs('start-path')
+      .returns('/workspace/repo/foo/package.json')
+    existsSyncStub.withArgs('/workspace/repo/foo/package.json').returns(true)
     sinon.stub(fs, 'statSync').returns({ isDirectory: () => false } as fs.Stats)
 
     await run({
@@ -140,15 +146,14 @@ describe('run', () => {
       scanPnpm: mockScanPnpm
     })
 
-    assert.strictEqual(
-      mockDetectPnpm.firstCall.args[0],
-      path.resolve('/tmp/foo')
-    )
+    assert.strictEqual(mockDetectPnpm.firstCall.args[0], '/workspace/repo/foo')
   })
 
   it('should reject a non-package.json file as start-path', async () => {
-    core.getInput.withArgs('start-path').returns('/tmp/foo/README.md')
-    existsSyncStub.withArgs(path.resolve('/tmp/foo/README.md')).returns(true)
+    core.getInput
+      .withArgs('start-path')
+      .returns('/workspace/repo/foo/README.md')
+    existsSyncStub.withArgs('/workspace/repo/foo/README.md').returns(true)
     sinon.stub(fs, 'statSync').returns({ isDirectory: () => false } as fs.Stats)
 
     await run({
@@ -169,8 +174,8 @@ describe('run', () => {
   })
 
   it('should accept a directory start-path unchanged', async () => {
-    core.getInput.withArgs('start-path').returns('/tmp/foo')
-    existsSyncStub.withArgs(path.resolve('/tmp/foo')).returns(true)
+    core.getInput.withArgs('start-path').returns('/workspace/repo/foo')
+    existsSyncStub.withArgs('/workspace/repo/foo').returns(true)
     sinon.stub(fs, 'statSync').returns({ isDirectory: () => true } as fs.Stats)
 
     await run({
@@ -181,10 +186,7 @@ describe('run', () => {
       scanPnpm: mockScanPnpm
     })
 
-    assert.strictEqual(
-      mockDetectPnpm.firstCall.args[0],
-      path.resolve('/tmp/foo')
-    )
+    assert.strictEqual(mockDetectPnpm.firstCall.args[0], '/workspace/repo/foo')
   })
 
   it('should continue past start-path normalization when statSync fails', async () => {
@@ -221,7 +223,7 @@ describe('run', () => {
 
   it('should fail when custom-fields-path does not exist', async () => {
     core.getInput.withArgs('custom-fields-path').returns('./custom-fields.json')
-    existsSyncStub.withArgs(path.resolve('./custom-fields.json')).returns(false)
+    existsSyncStub.withArgs('/workspace/repo/custom-fields.json').returns(false)
 
     await run({
       core,
@@ -264,7 +266,7 @@ describe('run', () => {
       .withArgs('clarifications-path')
       .returns('./clarifications.json')
     existsSyncStub
-      .withArgs(path.resolve('./clarifications.json'))
+      .withArgs('/workspace/repo/clarifications.json')
       .returns(false)
 
     await run({
@@ -284,6 +286,94 @@ describe('run', () => {
     // Should short-circuit before any scan happens.
     assert.strictEqual(licenseChecker.init.called, false)
     assert.strictEqual(mockDetectPnpm.called, false)
+  })
+
+  it('should fail when start-path is outside the workspace', async () => {
+    core.getInput.withArgs('start-path').returns('../other/package.json')
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      core.setFailed.calledOnceWithExactly(
+        'Error checking licenses: start-path must be inside the workspace: ../other/package.json'
+      ),
+      true
+    )
+    assert.strictEqual(existsSyncStub.called, false)
+    assert.strictEqual(mockDetectPnpm.called, false)
+    assert.strictEqual(licenseChecker.init.called, false)
+  })
+
+  it('should fail when custom-fields-path is outside the workspace', async () => {
+    core.getInput.withArgs('custom-fields-path').returns('/etc/custom.json')
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      core.setFailed.calledOnceWithExactly(
+        'Error checking licenses: custom-fields-path must be inside the workspace: /etc/custom.json'
+      ),
+      true
+    )
+    assert.strictEqual(readFileSyncStub.called, false)
+    assert.strictEqual(licenseChecker.init.called, false)
+  })
+
+  it('should fail when clarifications-path is outside the workspace', async () => {
+    core.getInput
+      .withArgs('clarifications-path')
+      .returns('../clarifications.json')
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      core.setFailed.calledOnceWithExactly(
+        'Error checking licenses: clarifications-path must be inside the workspace: ../clarifications.json'
+      ),
+      true
+    )
+    assert.strictEqual(readFileSyncStub.called, false)
+    assert.strictEqual(licenseChecker.init.called, false)
+  })
+
+  it('should fail when details-output-path is outside the workspace', async () => {
+    const writeStub = sinon.stub(fs, 'writeFileSync')
+    core.getInput.withArgs('details-output-path').returns('/tmp/details.json')
+
+    await run({
+      core,
+      licenseChecker,
+      detectPnpm: mockDetectPnpm,
+      findPnpmWorkspaceRoot: mockFindPnpmWorkspaceRoot,
+      scanPnpm: mockScanPnpm
+    })
+
+    assert.strictEqual(
+      core.setFailed.calledOnceWithExactly(
+        'Error checking licenses: details-output-path must be inside the workspace: /tmp/details.json'
+      ),
+      true
+    )
+    assert.strictEqual(writeStub.called, false)
+    assert.strictEqual(licenseChecker.init.called, false)
   })
 
   it('should fail when checkLicenses rejects', async () => {
@@ -309,10 +399,10 @@ describe('run', () => {
   })
 
   it('should handle clarificationsPath correctly when file exists', async () => {
-    const clarificationsPath = './clarifications.json'
-
-    core.getInput.withArgs('clarifications-path').returns(clarificationsPath)
-    existsSyncStub.withArgs(path.resolve(clarificationsPath)).returns(true)
+    core.getInput
+      .withArgs('clarifications-path')
+      .returns('./clarifications.json')
+    existsSyncStub.withArgs('/workspace/repo/clarifications.json').returns(true)
 
     await run({
       core,
@@ -323,10 +413,9 @@ describe('run', () => {
     })
 
     assert.strictEqual(core.setFailed.notCalled, true)
-    assert.ok(
-      JSON.stringify(licenseChecker.init.firstCall.args[0]).includes(
-        clarificationsPath
-      )
+    assert.strictEqual(
+      licenseChecker.init.firstCall.args[0].clarificationsFile,
+      '/workspace/repo/clarifications.json'
     )
   })
 
@@ -424,9 +513,9 @@ describe('run', () => {
   })
 
   it('should handle detailsOutputPath parameter correctly', async () => {
-    const detailsOutputPath = './license-details.json'
-
-    core.getInput.withArgs('details-output-path').returns(detailsOutputPath)
+    core.getInput
+      .withArgs('details-output-path')
+      .returns('./license-details.json')
     await run({
       core,
       licenseChecker,
@@ -436,10 +525,10 @@ describe('run', () => {
     })
 
     assert.strictEqual(core.setFailed.notCalled, true)
-
-    const options = licenseChecker.init.firstCall.args[0]
-
-    assert.ok(JSON.stringify(options).includes(detailsOutputPath))
+    assert.strictEqual(
+      licenseChecker.init.firstCall.args[0].out,
+      '/workspace/repo/license-details.json'
+    )
   })
 
   it('should fail when licenseCheckerSummary is empty', async () => {
@@ -476,7 +565,7 @@ describe('run', () => {
       .find(call => call.args[0].includes('Provided options'))
     assert.notStrictEqual(infoCall, undefined)
     assert.ok(infoCall!.args[0].includes('MIT'))
-    assert.ok(infoCall!.args[0].includes('./details.json'))
+    assert.ok(infoCall!.args[0].includes('/workspace/repo/details.json'))
   })
 
   it('should log license checker summary when available', async () => {
@@ -545,7 +634,7 @@ describe('run', () => {
 
     it('should use --filter for pnpm workspace members', async () => {
       core.getInput.withArgs('start-path').returns('./packages/app')
-      mockFindPnpmWorkspaceRoot.returns(path.resolve('./'))
+      mockFindPnpmWorkspaceRoot.returns('/workspace/repo')
 
       await run({
         core,
@@ -561,8 +650,11 @@ describe('run', () => {
     })
 
     it('should use -r for pnpm workspace root', async () => {
-      const root = path.resolve('./')
-      mockFindPnpmWorkspaceRoot.returns(root)
+      core.getInput.withArgs('start-path').returns('/workspace/repo')
+      sinon
+        .stub(fs, 'statSync')
+        .returns({ isDirectory: () => true } as fs.Stats)
+      mockFindPnpmWorkspaceRoot.returns('/workspace/repo')
 
       await run({
         core,
@@ -626,7 +718,7 @@ describe('run', () => {
         .withArgs('clarifications-path')
         .returns('./clarifications.json')
       readFileSyncStub
-        .withArgs('./clarifications.json', 'utf8')
+        .withArgs('/workspace/repo/clarifications.json', 'utf8')
         .returns(JSON.stringify({ 'foo@^1.0.0': { licenses: 'MIT' } }))
 
       await run({
@@ -649,7 +741,7 @@ describe('run', () => {
         .withArgs('clarifications-path')
         .returns('./clarifications.json')
       readFileSyncStub
-        .withArgs('./clarifications.json', 'utf8')
+        .withArgs('/workspace/repo/clarifications.json', 'utf8')
         .returns('not valid json')
 
       await run({
@@ -723,6 +815,10 @@ describe('run', () => {
       })
 
       assert.strictEqual(writeStub.calledOnce, true)
+      assert.strictEqual(
+        writeStub.firstCall.args[0],
+        '/workspace/repo/out.json'
+      )
       assert.ok((writeStub.firstCall.args[1] as string).includes('foo@1.0.0'))
     })
 
@@ -747,13 +843,15 @@ describe('run', () => {
     })
 
     it('should use default detectPnpm/scanPnpm when not injected', async () => {
-      // Pass no DI — real defaults will try to detect pnpm from cwd. Since the
-      // repo root has a node_modules (from our install), defaults are exercised.
+      envStub.value({ ...process.env, GITHUB_WORKSPACE: process.cwd() })
+
       await run({ core, licenseChecker })
 
-      // Either the scan succeeded (reached asSummary) or failed (setFailed) —
-      // either way, the defaults were invoked.
-      assert.ok(core.setFailed.called || licenseChecker.asSummary.called)
+      assert.strictEqual(core.setFailed.notCalled, true)
+      assert.strictEqual(licenseChecker.asSummary.calledOnce, true)
+      assert.strictEqual(licenseChecker.init.notCalled, true)
+      const scanned = licenseChecker.asSummary.firstCall.args[0] as ModuleInfos
+      assert.ok(Object.keys(scanned).some(key => key.startsWith('semver@')))
     })
   })
 })
