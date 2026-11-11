@@ -87,22 +87,11 @@ describe('run', () => {
     )
   })
 
-  it('warns and skips regression when baseline-path is outside the workspace', async () => {
+  it('fails when baseline-path is outside the workspace and fail-on-missing-baseline is false', async () => {
     inputs['current-path'] = writeJson('current.json', { a: 10 })
     inputs['baseline-path'] = '../baseline.json'
     await run(core)
-    assert.equal(core.setFailed.called, false)
-    assert.equal(
-      core.warning.firstCall.args[0],
-      'baseline-path must be inside the workspace: ../baseline.json'
-    )
-  })
-
-  it('fails when baseline-path is outside the workspace and fail-on-missing-baseline is true', async () => {
-    inputs['current-path'] = writeJson('current.json', { a: 10 })
-    inputs['baseline-path'] = '../baseline.json'
-    inputs['fail-on-missing-baseline'] = 'true'
-    await run(core)
+    assert.equal(core.warning.called, false)
     assert.equal(core.setFailed.calledOnce, true)
     assert.equal(
       core.setFailed.firstCall.args[0],

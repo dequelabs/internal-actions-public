@@ -27788,8 +27788,8 @@ function resolveWorkspacePath(input, label) {
 
 
 function readOptionalMap(filePath, label) {
+    const resolved = resolveWorkspacePath(filePath, label);
     try {
-        const resolved = resolveWorkspacePath(filePath, label);
         if (!external_node_fs_default().existsSync(resolved)) {
             return { map: null, error: `${label} not found at ${filePath}` };
         }

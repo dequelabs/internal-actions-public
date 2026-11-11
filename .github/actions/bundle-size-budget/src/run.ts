@@ -14,8 +14,8 @@ type ReadMapResult =
   | { map: null; error: string }
 
 function readOptionalMap(filePath: string, label: string): ReadMapResult {
+  const resolved = resolveWorkspacePath(filePath, label)
   try {
-    const resolved = resolveWorkspacePath(filePath, label)
     if (!fs.existsSync(resolved)) {
       return { map: null, error: `${label} not found at ${filePath}` }
     }
